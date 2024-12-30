@@ -1,9 +1,5 @@
 package json
 
-import (
-	"combi/internal/logger"
-)
-
 // ----------------------------------------------------------------
 // Merge JSON data structure
 // ----------------------------------------------------------------
@@ -31,7 +27,7 @@ func mergeJsonObjects(destination, source map[string]any) {
 		case map[string]any:
 			mergeJsonObjects(destination[srcKey].(map[string]any), srcVal.(map[string]any))
 		default:
-			logger.Log.Debugf("invalid json type\n")
+			// logger.Log.Debugf("invalid json type\n")
 		}
 	}
 }
@@ -62,7 +58,7 @@ func mergeJsonArray(destination, source []interface{}) {
 				mergeJsonObjects(destination[srcIndex].(map[string]any), srcVal.(map[string]any))
 			}
 		default:
-			logger.Log.Debugf("invalid json type\n")
+			// logger.Log.Debugf("invalid json type\n")
 		}
 	}
 }

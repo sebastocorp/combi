@@ -1,0 +1,52 @@
+# combi configuration file
+
+kind: "" # nginx|json|libconfig
+
+logger:
+  level: info # info|warning|error|debug
+
+sources:  # source config to merge in target file
+- name: ""
+  type: "" # raw|file|git|kubernetes
+  raw: ""
+  filepath: ""
+  git:
+    sshUrl: ""
+    sshKeyFilepath: ""
+    branch: ""
+    filepath: ""
+  k8s:
+    configMapRef:
+      namespace: ""
+      name: ""
+      key: ""
+    secretRef:
+      namespace: ""
+      name: ""
+      key: ""
+
+behavior:
+  syncTime: 10s
+  
+  target:
+    path: ./int.tests/target
+    file: merged.v1alpgha3.cnf
+    mode: 0744
+  
+  tmpObjs:
+    path: /tmp/combi
+    mode: 0744
+  
+  conditions: []
+  # conditions:
+  # - name: ""
+  #   mandatory: false
+  #   template: ""
+  #   value: ""
+  
+  actions: []
+  # actions:
+  # - name: ""
+  #   conditionResult: SUCCESS
+  #   command: []
+  #   script: ""

@@ -1,15 +1,10 @@
 package encoding
 
 import (
+	"combi/internal/config"
 	"combi/internal/encoding/json"
 	"combi/internal/encoding/libconfig"
 	"combi/internal/encoding/nginx"
-)
-
-const (
-	jsonEncoderKey      = `json`
-	nginxEncoderKey     = `nginx`
-	libconfigEncoderKey = `libconfig`
 )
 
 type EncoderT interface {
@@ -28,9 +23,18 @@ type EncoderT interface {
 
 func GetEncoders() (encoders map[string]EncoderT) {
 	encoders = map[string]EncoderT{
-		jsonEncoderKey:      &json.JsonT{},
-		nginxEncoderKey:     &nginx.NginxT{},
-		libconfigEncoderKey: &libconfig.LibconfigT{},
+		config.ConfigKindValueJSON:      &json.JsonT{},
+		config.ConfigKindValueNGINX:     &nginx.NginxT{},
+		config.ConfigKindValueLIBCONFIG: &libconfig.LibconfigT{},
 	}
 	return encoders
+}
+
+func GetEncoder(encType string) (encoder EncoderT) {
+	encoders := map[string]EncoderT{
+		config.ConfigKindValueJSON:      &json.JsonT{},
+		config.ConfigKindValueNGINX:     &nginx.NginxT{},
+		config.ConfigKindValueLIBCONFIG: &libconfig.LibconfigT{},
+	}
+	return encoders[encType]
 }

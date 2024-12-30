@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"context"
-	"fmt"
 	"log/slog"
 	"os"
 )
@@ -21,76 +19,106 @@ const (
 )
 
 type LoggerT struct {
-	SLogger   *slog.Logger
-	Context   context.Context
-	ExtraAttr []any
+	Logger       *slog.Logger
+	CommonFields map[string]any
 }
 
-var Log LoggerT
+func NewLogger(level LevelT, commonFields map[string]any) (logger LoggerT) {
+	logger.CommonFields = commonFields
 
-func InitLogger(ctx context.Context, level LevelT, extraAttr ...any) {
 	opts := &slog.HandlerOptions{
 		AddSource: false,
 		Level:     slog.Level(level),
 	}
 	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
-	Log.SLogger = slog.New(jsonHandler)
-	Log.Context = ctx
-	Log.ExtraAttr = extraAttr
+	logger.Logger = slog.New(jsonHandler)
+
+	return logger
 }
 
-func GetLevel(levelStr string) (l LevelT, err error) {
+func GetLevel(levelStr string) (l LevelT) {
 	levelMap := map[string]LevelT{
 		"debug": DEBUG,
 		"info":  INFO,
 		"warn":  WARN,
 		"error": ERROR,
 	}
-	if l, ok := levelMap[levelStr]; ok {
-		return l, err
+
+	l, ok := levelMap[levelStr]
+	if !ok {
+		l = DEBUG
 	}
-	l = INFO
-	err = fmt.Errorf("log level '%s' not supported", levelStr)
-	return l, err
+
+	return l
 }
 
-func (l *LoggerT) Debugf(format string, args ...any) {
-	if l.Context != nil {
-		l.SLogger.DebugContext(l.Context, fmt.Sprintf(format, args...), l.ExtraAttr...)
-		return
+func (l *LoggerT) Debug(msg string, extraFields map[string]any) {
+	extraFieldsArr := []any{}
+
+	for k, v := range l.CommonFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
 	}
-	l.SLogger.Debug(fmt.Sprintf(format, args...), l.ExtraAttr...)
+
+	for k, v := range extraFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
+	}
+
+	l.Logger.Debug(msg, extraFieldsArr...)
 }
 
-func (l *LoggerT) Infof(format string, args ...any) {
-	if l.Context != nil {
-		l.SLogger.InfoContext(l.Context, fmt.Sprintf(format, args...), l.ExtraAttr...)
-		return
+func (l *LoggerT) Info(msg string, extraFields map[string]any) {
+	extraFieldsArr := []any{}
+
+	for k, v := range l.CommonFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
 	}
-	l.SLogger.Info(fmt.Sprintf(format, args...), l.ExtraAttr...)
+
+	for k, v := range extraFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
+	}
+
+	l.Logger.Info(msg, extraFieldsArr...)
 }
 
-func (l *LoggerT) Warnf(format string, args ...any) {
-	if l.Context != nil {
-		l.SLogger.WarnContext(l.Context, fmt.Sprintf(format, args...), l.ExtraAttr...)
-		return
+func (l *LoggerT) Warn(msg string, extraFields map[string]any) {
+	extraFieldsArr := []any{}
+
+	for k, v := range l.CommonFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
 	}
-	l.SLogger.Warn(fmt.Sprintf(format, args...), l.ExtraAttr...)
+
+	for k, v := range extraFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
+	}
+
+	l.Logger.Warn(msg, extraFieldsArr...)
 }
 
-func (l *LoggerT) Errorf(format string, args ...any) {
-	if l.Context != nil {
-		l.SLogger.ErrorContext(l.Context, fmt.Sprintf(format, args...), l.ExtraAttr...)
-		return
+func (l *LoggerT) Error(msg string, extraFields map[string]any) {
+	extraFieldsArr := []any{}
+
+	for k, v := range l.CommonFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
 	}
-	l.SLogger.Error(fmt.Sprintf(format, args...), l.ExtraAttr...)
+
+	for k, v := range extraFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
+	}
+
+	l.Logger.Error(msg, extraFieldsArr...)
 }
 
-func (l *LoggerT) Fatalf(format string, args ...any) {
-	if l.Context != nil {
-		l.SLogger.ErrorContext(l.Context, fmt.Sprintf(format, args...), l.ExtraAttr...)
-		os.Exit(1)
+func (l *LoggerT) Fatal(msg string, extraFields map[string]any) {
+	extraFieldsArr := []any{}
+
+	for k, v := range l.CommonFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
 	}
-	l.SLogger.Error(fmt.Sprintf(format, args...), l.ExtraAttr...)
+
+	for k, v := range extraFields {
+		extraFieldsArr = append(extraFieldsArr, k, v)
+	}
+
+	l.Logger.Error(msg, extraFieldsArr...)
 	os.Exit(1)
 }

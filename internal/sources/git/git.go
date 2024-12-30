@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"combi/api/v1alpha2"
-	"combi/internal/globals"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -33,7 +32,8 @@ func (s *GitSourceT) Init(source v1alpha2.SourceT) (err error) {
 	s.RepoBranch = source.Git.Branch
 
 	repoFolder := s.getRepoMD5Hash()
-	s.RepoPath = globals.TmpDir + "/repos/" + repoFolder
+	// s.RepoPath = globals.TmpDir + "/repos/" + repoFolder
+	s.RepoPath = "/repos/" + repoFolder
 
 	s.ConfigFilepath = fmt.Sprintf("%s/%s", s.RepoPath, source.Git.Filepath)
 	s.SshKeyFilepath = source.Git.SshKeyFilepath

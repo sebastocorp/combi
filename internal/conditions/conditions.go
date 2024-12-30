@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"combi/api/v1alpha2"
-	"combi/internal/logger"
 	"combi/internal/template"
 )
 
@@ -33,7 +32,7 @@ func EvalConditions(conditions *v1alpha2.ConditionsT, config *map[string]interfa
 		}
 
 		if condition.Value != result {
-			logger.Log.Warnf(optionalConditionErrorMessage, condition.Name, condition.Value, result)
+			// logger.Log.Warnf(optionalConditionErrorMessage, condition.Name, condition.Value, result)
 		}
 	}
 

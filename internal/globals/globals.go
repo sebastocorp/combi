@@ -2,9 +2,18 @@ package globals
 
 import "strings"
 
-var (
-	TmpDir = ""
+const (
+	LogKeyService = "service"
+
+	LogValueService    = "combi"
+	LogValueDefaultStr = "none"
 )
+
+func GetLogCommonFields() map[string]any {
+	return map[string]any{
+		LogKeyService: LogValueService,
+	}
+}
 
 // CopyMap return a map that is a real copy of the original
 // Ref: https://go.dev/blog/maps

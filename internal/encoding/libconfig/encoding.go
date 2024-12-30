@@ -1,7 +1,6 @@
 package libconfig
 
 import (
-	"combi/internal/logger"
 	"os"
 	"regexp"
 )
@@ -67,7 +66,7 @@ func encodeConfigSettingString(settings map[string]any, indent int) (configStr s
 			configStr += encodeConfigGroupString(value.(map[string]any), indent)
 			configStr += ",\n"
 		default:
-			logger.Log.Debugf("invalid libconfig type\n")
+			// logger.Log.Debugf("invalid libconfig type\n")
 		}
 	}
 
@@ -118,7 +117,7 @@ func encodeConfigListString(list []any, indent int) (configStr string) {
 		case map[string]any:
 			configStr += encodeConfigGroupString(value.(map[string]any), indent+1)
 		default:
-			logger.Log.Debugf("invalid libconfig type\n")
+			// logger.Log.Debugf("invalid libconfig type\n")
 		}
 
 		if index < len(list)-1 {

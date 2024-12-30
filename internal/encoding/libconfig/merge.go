@@ -1,7 +1,5 @@
 package libconfig
 
-import "combi/internal/logger"
-
 // ----------------------------------------------------------------
 // Merge LIBCONFIG data structure
 // ----------------------------------------------------------------
@@ -32,7 +30,7 @@ func mergeSettings(destination, source map[string]any) {
 		case map[string]any:
 			mergeSettings(destination[srcKey].(map[string]any), srcVal.(map[string]any))
 		default:
-			logger.Log.Debugf("invalid libconfig type\n")
+			// logger.Log.Debugf("invalid libconfig type\n")
 		}
 	}
 }
@@ -75,7 +73,7 @@ func mergeSettingList(destination *[]any, source []any) {
 				mergeSettings((*destination)[srcIndex].(map[string]any), srcVal.(map[string]any))
 			}
 		default:
-			logger.Log.Debugf("invalid libconfig type\n")
+			// logger.Log.Debugf("invalid libconfig type\n")
 		}
 	}
 }
