@@ -3,6 +3,9 @@ package sources
 import (
 	"combi/api/v1alpha3"
 	"combi/internal/config"
+	"combi/internal/sources/file"
+	"combi/internal/sources/git"
+	"combi/internal/sources/k8s"
 	"combi/internal/sources/raw"
 )
 
@@ -19,12 +22,15 @@ func GetSource(srcConf v1alpha3.SourceConfigT, srcpath string) (SourceT, error) 
 		}
 	case config.ConfigSourceTypeValueFILE:
 		{
+			return file.NewFileSource(srcConf, srcpath)
 		}
 	case config.ConfigSourceTypeValueGIT:
 		{
+			return git.NewGitSource(srcConf, srcpath)
 		}
 	case config.ConfigSourceTypeValueK8S:
 		{
+			return k8s.NewK8sSource(srcConf, srcpath)
 		}
 	}
 	return nil, nil

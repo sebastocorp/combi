@@ -25,7 +25,7 @@ func (c *CombiT) setup(conf *v1alpha3.CombiConfigT) error {
 		return err
 	}
 
-	c.targetFilepath = conf.Behavior.Target.Path + "/" + conf.Behavior.Target.File
+	c.targetFilepath = filepath.Join(conf.Behavior.Target.Path, conf.Behavior.Target.File)
 
 	// Sources setup
 

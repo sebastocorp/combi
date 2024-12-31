@@ -9,23 +9,23 @@ import (
 )
 
 type FileSourceT struct {
-	srcFilepath     string
-	currentFilepath string
+	srcConfig  string
+	storConfig string
 }
 
 func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourceT, err error) {
 	s = &FileSourceT{
-		srcFilepath: srcConf.File,
+		srcConfig:  srcConf.File,
+		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.File)),
 	}
 
 	var configBytes []byte
-	configBytes, err = os.ReadFile(s.srcFilepath)
+	configBytes, err = os.ReadFile(s.srcConfig)
 	if err != nil {
 		return s, err
 	}
 
-	s.currentFilepath = filepath.Join(srcpath, filepath.Base(s.srcFilepath))
-	err = os.WriteFile(s.currentFilepath, configBytes, 0777)
+	err = os.WriteFile(s.storConfig, configBytes, 0777)
 	if err != nil {
 		return s, err
 	}
@@ -34,19 +34,19 @@ func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourc
 }
 
 func (s *FileSourceT) SyncConfig() (updated bool, err error) {
-	syncBytes, err := os.ReadFile(s.srcFilepath)
+	srcBytes, err := os.ReadFile(s.srcConfig)
 	if err != nil {
 		return updated, err
 	}
 
-	currentBytes, err := os.ReadFile(s.srcFilepath)
+	storBytes, err := os.ReadFile(s.storConfig)
 	if err != nil {
 		return updated, err
 	}
 
-	if !reflect.DeepEqual(syncBytes, currentBytes) {
+	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(s.currentFilepath, syncBytes, 0777)
+		err = os.WriteFile(s.storConfig, srcBytes, 0777)
 		if err != nil {
 			return updated, err
 		}
@@ -56,7 +56,7 @@ func (s *FileSourceT) SyncConfig() (updated bool, err error) {
 }
 
 func (s *FileSourceT) GetConfig() (conf []byte, err error) {
-	if conf, err = os.ReadFile(s.currentFilepath); err != nil {
+	if conf, err = os.ReadFile(s.storConfig); err != nil {
 		return conf, err
 	}
 

@@ -1,13 +1,13 @@
 # combi configuration file
 
-kind: "" # nginx|json|libconfig
+kind: "" # JSON|NGINX|LIBCONFIG
 
 logger:
   level: info # info|warning|error|debug
 
 sources:  # source config to merge in target file
 - name: ""
-  type: "" # raw|file|git|kubernetes
+  type: "" # RAW|FILE|GIT|K8S
   raw: ""
   filepath: ""
   git:
@@ -47,6 +47,6 @@ behavior:
   actions: []
   # actions:
   # - name: ""
-  #   conditionResult: SUCCESS
+  #   on: SUCCESS
   #   command: []
   #   script: ""

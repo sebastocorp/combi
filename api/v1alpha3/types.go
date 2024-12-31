@@ -19,7 +19,7 @@ type LoggerConfigT struct {
 
 type SourceConfigT struct {
 	Name       string           `yaml:"name"`
-	Type       string           `yaml:"type"` // values: raw|file|git|k8s
+	Type       string           `yaml:"type"` // values: RAW|FILE|GIT|K8S
 	Raw        string           `yaml:"raw,omitempty"`
 	File       string           `yaml:"file,omitempty"`
 	Git        SourceGitConfigT `yaml:"git,omitempty"`
@@ -70,8 +70,8 @@ type ConditionConfigT struct {
 }
 
 type ActionConfigT struct {
-	Name            string   `yaml:"name"`
-	ConditionResult string   `yaml:"conditionResult"`
-	Command         []string `yaml:"command"`
-	Script          string   `yaml:"script"`
+	Name    string   `yaml:"name"`
+	On      string   `yaml:"on"`
+	Command []string `yaml:"command"`
+	Script  string   `yaml:"script"`
 }

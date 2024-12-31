@@ -17,8 +17,8 @@ const (
 	ConfigKindValueNGINX     = "NGINX"
 	ConfigKindValueLIBCONFIG = "LIBCONFIG"
 
-	ConfigConditionResultValueSUCCESS = "SUCCESS"
-	ConfigConditionResultValueFAILURE = "FAILURE"
+	ConfigOnValueSUCCESS = "SUCCESS"
+	ConfigOnValueFAILURE = "FAILURE"
 
 	ConfigSourceTypeValueRAW  = "RAW"
 	ConfigSourceTypeValueFILE = "FILE"
@@ -62,7 +62,7 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 		ConfigKindValueLIBCONFIG,
 	}
 	if !slices.Contains(configKindValues, config.Kind) {
-		return fmt.Errorf("kind must be one of this %v", configKindValues)
+		return fmt.Errorf("kind field must be one of this %v", configKindValues)
 	}
 
 	//------------------------------
@@ -78,7 +78,7 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 	}
 	for _, sv := range config.Sources {
 		if !slices.Contains(srcTypeValues, sv.Type) {
-			return fmt.Errorf("source type '%s' must be one of this %v", sv.Name, srcTypeValues)
+			return fmt.Errorf("source '%s' type field must be one of this %v", sv.Name, srcTypeValues)
 		}
 
 		if _, ok := namesCount[sv.Name]; ok {
@@ -92,15 +92,15 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 	//------------------------------
 
 	if config.Behavior.SyncTime < 2*time.Second {
-		return fmt.Errorf("behavior.syncTime must be at least 2 seconds")
+		return fmt.Errorf("behavior.syncTime field must be at least 2 seconds")
 	}
 
 	if config.Behavior.Target.Path == "" {
-		return fmt.Errorf("behavior.target.path must be set")
+		return fmt.Errorf("behavior.target.path field must be set")
 	}
 
 	if config.Behavior.Target.File == "" {
-		return fmt.Errorf("behavior.target.file must be set")
+		return fmt.Errorf("behavior.target.file field must be set")
 	}
 
 	if config.Behavior.Target.Mode == 0 {
@@ -128,13 +128,13 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 	// actions check
 
 	namesCount = map[string]int{}
-	conditionResultValues := []string{
-		ConfigConditionResultValueSUCCESS,
-		ConfigConditionResultValueFAILURE,
+	onValues := []string{
+		ConfigOnValueSUCCESS,
+		ConfigOnValueFAILURE,
 	}
 	for _, av := range config.Behavior.Actions {
-		if !slices.Contains(conditionResultValues, av.ConditionResult) {
-			return fmt.Errorf("action '%s' conditionResult must be one of this %v", av.Name, conditionResultValues)
+		if !slices.Contains(onValues, av.On) {
+			return fmt.Errorf("action '%s' on field must be one of this %v", av.Name, onValues)
 		}
 
 		if _, ok := namesCount[av.Name]; ok {

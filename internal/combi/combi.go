@@ -46,25 +46,27 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 }
 
 func (c *CombiT) Run() {
-	c.log.Info("init combi", map[string]any{})
-
+	extraLogFile := map[string]any{}
+	c.log.Info("init combi", extraLogFile)
 	var err error
 	for {
-		c.log.Debug("waiting sync", map[string]any{})
+		c.log.Debug("waiting sync", extraLogFile)
 		time.Sleep(c.syncTime)
 
+		c.log.Info("init sources sync", extraLogFile)
 		updatedList := []bool{}
 		var updated bool
 		for _, sv := range c.srcs {
 			updated, err = sv.SyncConfig()
 			if err != nil {
+				c.log.Error("source sync failed", extraLogFile)
 				break
 			}
 			updatedList = append(updatedList, updated)
 		}
 
 		if !slices.Contains(updatedList, true) {
-			c.log.Debug("no updates in sources", map[string]any{})
+			c.log.Debug("no updates in sources", extraLogFile)
 			continue
 		}
 	}

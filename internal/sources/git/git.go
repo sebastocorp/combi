@@ -1,16 +1,12 @@
 package git
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-	"fmt"
-	"math/rand"
 	"os"
+	"path/filepath"
 	"reflect"
-	"strconv"
-	"strings"
 
-	"combi/api/v1alpha2"
+	"combi/api/v1alpha3"
+	"combi/internal/config"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -18,74 +14,97 @@ import (
 )
 
 type GitSourceT struct {
-	ConfigFilepath string
-	StoredConfig   []byte
+	srcConfig  string
+	storConfig string
 
-	SshKeyFilepath string
-	RepoSshUrl     string
-	RepoPath       string
-	RepoBranch     string
+	repo repoT
 }
 
-func (s *GitSourceT) Init(source v1alpha2.SourceT) (err error) {
-	s.RepoSshUrl = source.Git.SshUrl
-	s.RepoBranch = source.Git.Branch
-
-	repoFolder := s.getRepoMD5Hash()
-	// s.RepoPath = globals.TmpDir + "/repos/" + repoFolder
-	s.RepoPath = "/repos/" + repoFolder
-
-	s.ConfigFilepath = fmt.Sprintf("%s/%s", s.RepoPath, source.Git.Filepath)
-	s.SshKeyFilepath = source.Git.SshKeyFilepath
-
-	return err
+type repoT struct {
+	syncPath string
+	sshKey   string
+	url      string
+	branch   string
 }
 
-func (s *GitSourceT) GetConfig() (config []byte, updated bool, err error) {
-	if _, err = os.Stat(s.RepoPath); !os.IsNotExist(err) {
-		if err = os.RemoveAll(s.RepoPath); err != nil {
-			return config, updated, err
+func NewGitSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *GitSourceT, err error) {
+	s = &GitSourceT{
+		srcConfig:  filepath.Join(srcpath, "sync/repo", srcConf.Git.Filepath),
+		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.Git.Filepath)),
+
+		repo: repoT{
+			syncPath: filepath.Join(srcpath, "sync/repo"),
+			sshKey:   srcConf.Git.SshKeyFilepath,
+			url:      srcConf.Git.SshUrl,
+			branch:   srcConf.Git.Branch,
+		},
+	}
+
+	if _, err = os.Stat(s.repo.sshKey); err != nil {
+		return s, err
+	}
+
+	err = os.MkdirAll(filepath.Join(srcpath, "sync"), 0777)
+	if err != nil {
+		return s, err
+	}
+
+	return s, err
+}
+
+func (s *GitSourceT) SyncConfig() (updated bool, err error) {
+	if _, err = os.Stat(s.srcConfig); !os.IsNotExist(err) {
+		if err = os.RemoveAll(s.repo.syncPath); err != nil {
+			return updated, err
 		}
 	}
 
-	if _, err = os.Stat(s.SshKeyFilepath); err != nil {
-		return config, updated, err
-	}
-
-	publicSshKey, err := ssh.NewPublicKeysFromFile("git", s.SshKeyFilepath, "")
+	publicSshKey, err := ssh.NewPublicKeysFromFile("git", s.repo.sshKey, "")
 	if err != nil {
-		return config, updated, err
+		return updated, err
 	}
 
-	_, err = git.PlainClone(s.RepoPath, false, &git.CloneOptions{
-		URL:           s.RepoSshUrl,
+	_, err = git.PlainClone(s.repo.syncPath, false, &git.CloneOptions{
+		URL:           s.repo.url,
 		Depth:         1,
-		ReferenceName: plumbing.NewBranchReferenceName(s.RepoBranch),
+		ReferenceName: plumbing.NewBranchReferenceName(s.repo.branch),
 		SingleBranch:  true,
 		Auth:          publicSshKey,
 	})
 	if err != nil {
-		return config, updated, err
+		return updated, err
 	}
 
-	if config, err = os.ReadFile(s.ConfigFilepath); err != nil {
-		return config, updated, err
+	srcBytes, err := os.ReadFile(s.srcConfig)
+	if err != nil {
+		return updated, err
 	}
-	config = []byte(os.ExpandEnv(string(config)))
 
-	if !reflect.DeepEqual(s.StoredConfig, config) {
+	storBytes, err := os.ReadFile(s.storConfig)
+	if err != nil {
+		if os.IsNotExist(err) {
+			updated = true
+			err = os.WriteFile(s.storConfig, srcBytes, 0777)
+			if err != nil {
+				return updated, err
+			}
+		}
+		return updated, err
+	}
+
+	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
 	}
 
-	return config, updated, err
+	return updated, err
 }
 
-func (s *GitSourceT) getRepoMD5Hash() string {
-	sshUrlParts := strings.Split(s.RepoSshUrl, "/")
-	repoName := sshUrlParts[len(sshUrlParts)-1]
-	repoID := strconv.FormatInt(int64(rand.Int()), 10)
-	repoFolder := strings.Join([]string{repoName, s.RepoBranch, repoID}, ".")
+func (s *GitSourceT) GetConfig() (conf []byte, err error) {
+	if conf, err = os.ReadFile(s.storConfig); err != nil {
+		return conf, err
+	}
 
-	hash := md5.Sum([]byte(repoFolder))
-	return hex.EncodeToString(hash[:])
+	conf = config.ExpandEnv(conf)
+
+	return conf, err
 }
