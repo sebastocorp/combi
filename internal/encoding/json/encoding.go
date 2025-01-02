@@ -14,8 +14,8 @@ type JsonT struct {
 
 // Decode functions
 
-func (e *JsonT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
-	if ok, err := regexp.Match("^[ ]*$", configBytes); ok {
+func (e *JsonT) DecodeConfig(configBytes []byte) (cfg map[string]any, err error) {
+	if ok, err := regexp.Match(`^\s*$`, configBytes); ok {
 		if err != nil {
 			return cfg, err
 		}
@@ -27,8 +27,6 @@ func (e *JsonT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err e
 
 // Encode functions
 
-func (e *JsonT) EncodeConfigString(cfg map[string]any) (configStr string) {
-	configBytes, _ := json.MarshalIndent(cfg, "", "  ")
-	configStr = string(configBytes)
-	return configStr
+func (e *JsonT) EncodeConfig(cfg map[string]any) (configBytes []byte, err error) {
+	return json.MarshalIndent(cfg, "", "  ")
 }

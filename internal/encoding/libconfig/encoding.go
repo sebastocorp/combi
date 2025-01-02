@@ -13,7 +13,7 @@ type LibconfigT struct {
 
 // Decode functions
 
-func (e *LibconfigT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
+func (e *LibconfigT) DecodeConfig(configBytes []byte) (cfg map[string]any, err error) {
 	configBytes = regexp.MustCompile(`#[^\n]*`).ReplaceAll(configBytes, []byte(""))
 	configStr := string(configBytes)
 
@@ -23,9 +23,9 @@ func (e *LibconfigT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, 
 
 // Encode functions
 
-func (e *LibconfigT) EncodeConfigString(cfg map[string]any) (configStr string) {
-	configStr += encodeConfigSettingString(cfg, 0)
-	return configStr
+func (e *LibconfigT) EncodeConfig(cfg map[string]any) ([]byte, error) {
+	configStr := encodeConfigSettingString(cfg, 0)
+	return []byte(configStr), nil
 }
 
 func encodeConfigSettingString(settings map[string]any, indent int) (configStr string) {

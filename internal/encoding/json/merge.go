@@ -4,8 +4,9 @@ package json
 // Merge JSON data structure
 // ----------------------------------------------------------------
 
-func (e *JsonT) MergeConfigs(dst map[string]any, src map[string]any) {
+func (e *JsonT) MergeConfigs(dst map[string]any, src map[string]any) error {
 	mergeJsonObjects(dst, src)
+	return nil
 }
 
 func mergeJsonObjects(destination, source map[string]any) {

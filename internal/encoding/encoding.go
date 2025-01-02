@@ -8,23 +8,14 @@ import (
 
 type EncoderT interface {
 	// Encode/Decode configurations
-	DecodeConfigBytes([]byte) (map[string]any, error)
-	EncodeConfigString(map[string]any) string
+	DecodeConfig([]byte) (map[string]any, error)
+	EncodeConfig(map[string]any) ([]byte, error)
 
 	// Merge configurations
-	MergeConfigs(dst map[string]any, src map[string]any)
+	MergeConfigs(dst map[string]any, src map[string]any) error
 }
 
-// func GetEncoders() (encoders map[string]EncoderT) {
-// 	encoders = map[string]EncoderT{
-// 		config.ConfigKindValueJSON:      &json.JsonT{},
-// 		config.ConfigKindValueNGINX:     &nginx.NginxT{},
-// 		config.ConfigKindValueLIBCONFIG: &libconfig.LibconfigT{},
-// 	}
-// 	return encoders
-// }
-
-func GetEncoder(encType string) (encoder EncoderT) {
+func GetEncoder(encType string) EncoderT {
 	encoders := map[string]EncoderT{
 		config.ConfigKindValueJSON: &json.JsonT{},
 		// config.ConfigKindValueNGINX:     &nginx.NginxT{},

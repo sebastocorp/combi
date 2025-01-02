@@ -7,8 +7,6 @@ import (
 	"combi/api/v1alpha3"
 )
 
-
-
 type ActionT struct {
 	Name string `json:"name"`
 	On   string `json:"on"`

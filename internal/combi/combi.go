@@ -109,7 +109,7 @@ func (c *CombiT) Run() {
 			}
 
 			var cfg map[string]any
-			cfg, err = c.encoder.DecodeConfigBytes(cfgBytes)
+			cfg, err = c.encoder.DecodeConfig(cfgBytes)
 			if err != nil {
 				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
 				c.log.Error("unable to decode source", extraLogFields)
@@ -153,8 +153,15 @@ func (c *CombiT) Run() {
 		globals.RemoveLogField(extraLogFields, globals.LogKeyConditionResult)
 
 		// config encode and create target file
-		cfgResiltStr := c.encoder.EncodeConfigString(cfgResult)
-		err = os.WriteFile(c.target.filepath, []byte(cfgResiltStr), c.target.mode)
+		var cfgResultBytes []byte
+		cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
+		if err != nil {
+			globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+			c.log.Error("unable to generate config", extraLogFields)
+			continue
+		}
+
+		err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
 		if err != nil {
 			globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
 			c.log.Error("unable to create target file", extraLogFields)

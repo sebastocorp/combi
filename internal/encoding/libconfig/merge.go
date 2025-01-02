@@ -4,8 +4,9 @@ package libconfig
 // Merge LIBCONFIG data structure
 // ----------------------------------------------------------------
 
-func (e *LibconfigT) MergeConfigs(dst map[string]any, src map[string]any) {
+func (e *LibconfigT) MergeConfigs(dst map[string]any, src map[string]any) error {
 	mergeSettings(dst, src)
+	return nil
 }
 
 func mergeSettings(destination, source map[string]any) {

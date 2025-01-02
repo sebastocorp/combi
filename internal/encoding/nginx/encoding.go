@@ -38,8 +38,8 @@ type BlockT struct {
 // Decode functions
 func (e *NginxT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
 	// Remove one line comments in file
-	configStr := regexp.MustCompile(`#[^\n]*?\n`).ReplaceAllString(string(configBytes), "\n")
-	configStr = regexp.MustCompile(`\n\s+`).ReplaceAllString(configStr, "\n")
+	// configStr := regexp.MustCompile(`#[^\n]*?\n`).ReplaceAllString(string(configBytes), "\n")
+	configStr := regexp.MustCompile(`\n\s+`).ReplaceAllString(string(configBytes), "\n")
 
 	// Format configuration to parse nginx config format by line
 	configStr = strings.Join(strings.Fields(configStr), " ")
