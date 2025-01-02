@@ -9,12 +9,14 @@ import (
 )
 
 type FileSourceT struct {
+	name       string
 	srcConfig  string
 	storConfig string
 }
 
 func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourceT, err error) {
 	s = &FileSourceT{
+		name:       srcConf.Name,
 		srcConfig:  srcConf.File,
 		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.File)),
 	}
@@ -31,6 +33,10 @@ func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourc
 	}
 
 	return s, err
+}
+
+func (s *FileSourceT) GetName() string {
+	return s.name
 }
 
 func (s *FileSourceT) SyncConfig() (updated bool, err error) {

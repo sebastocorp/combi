@@ -15,6 +15,7 @@ import (
 )
 
 type K8sSourceT struct {
+	name       string
 	srcConfig  string
 	storConfig string
 
@@ -32,20 +33,26 @@ type kubeT struct {
 
 func NewK8sSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *K8sSourceT, err error) {
 	s = &K8sSourceT{
-		srcConfig:  filepath.Join(srcpath, "sync", srcConf.Kubernetes.Key),
-		storConfig: filepath.Join(srcpath, srcConf.Kubernetes.Key),
+		name:       srcConf.Name,
+		srcConfig:  filepath.Join(srcpath, "sync", srcConf.K8s.Key),
+		storConfig: filepath.Join(srcpath, srcConf.K8s.Key),
+
 		kube: kubeT{
 			ctx:       context.Background(),
-			kind:      srcConf.Kubernetes.Kind,
-			namespace: srcConf.Kubernetes.Namespace,
-			name:      srcConf.Kubernetes.Name,
-			key:       srcConf.Kubernetes.Key,
+			kind:      srcConf.K8s.Kind,
+			namespace: srcConf.K8s.Namespace,
+			name:      srcConf.K8s.Name,
+			key:       srcConf.K8s.Key,
 		},
 	}
 
-	s.kube.client, err = newClient("")
+	s.kube.client, err = newClient(srcConf.K8s.Context)
 
 	return s, err
+}
+
+func (s *K8sSourceT) GetName() string {
+	return s.name
 }
 
 func (s *K8sSourceT) SyncConfig() (updated bool, err error) {

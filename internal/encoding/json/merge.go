@@ -3,12 +3,9 @@ package json
 // ----------------------------------------------------------------
 // Merge JSON data structure
 // ----------------------------------------------------------------
-func (e *JsonT) GetConfigStruct() (config interface{}) {
-	return e.ConfigStruct
-}
 
-func (e *JsonT) MergeConfigs(source interface{}) {
-	mergeJsonObjects(e.ConfigStruct.(map[string]any), source.(map[string]any))
+func (e *JsonT) MergeConfigs(dst map[string]any, src map[string]any) {
+	mergeJsonObjects(dst, src)
 }
 
 func mergeJsonObjects(destination, source map[string]any) {

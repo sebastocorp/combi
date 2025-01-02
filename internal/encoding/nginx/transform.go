@@ -4,11 +4,17 @@ import (
 	"strings"
 )
 
-func (e *NginxT) ConfigToMap() (configMap map[string]any) {
+func (e *NginxT) ConfigToMap(cfgStruct *BlockContentT) (configMap map[string]any) {
 	configMap = make(map[string]any)
-	blockContentToMap(&e.ConfigStruct, configMap)
+	blockContentToMap(cfgStruct, configMap)
 	return configMap
 }
+
+// func (e *NginxT) ConfigToMap() (configMap map[string]any) {
+// 	configMap = make(map[string]any)
+// 	blockContentToMap(&e.ConfigStruct, configMap)
+// 	return configMap
+// }
 
 func blockContentToMap(blockContent *BlockContentT, configMap map[string]any) {
 	for _, val := range blockContent.Directives {

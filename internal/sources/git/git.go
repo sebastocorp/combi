@@ -14,6 +14,7 @@ import (
 )
 
 type GitSourceT struct {
+	name       string
 	srcConfig  string
 	storConfig string
 
@@ -29,6 +30,7 @@ type repoT struct {
 
 func NewGitSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *GitSourceT, err error) {
 	s = &GitSourceT{
+		name:       srcConf.Name,
 		srcConfig:  filepath.Join(srcpath, "sync/repo", srcConf.Git.Filepath),
 		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.Git.Filepath)),
 
@@ -50,6 +52,10 @@ func NewGitSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *GitSourceT
 	}
 
 	return s, err
+}
+
+func (s *GitSourceT) GetName() string {
+	return s.name
 }
 
 func (s *GitSourceT) SyncConfig() (updated bool, err error) {

@@ -1,28 +1,25 @@
 package k8s
 
 import (
-	"path/filepath"
+	"combi/api/v1alpha3"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-func newClient(connectionMode string) (client *kubernetes.Clientset, err error) {
-	// Create configuration to connect from inside the cluster using Kubernetes mechanisms
-	config, err := rest.InClusterConfig()
-
-	// Create configuration to connect from outside the cluster, using kubectl
-	if connectionMode == "kubectl" {
-		if home := homedir.HomeDir(); home != "" {
-			config, err = clientcmd.BuildConfigFromFlags("", filepath.Join(home, ".kube", "config"))
+func newClient(ctx v1alpha3.SourceK8sContextConfigT) (client *kubernetes.Clientset, err error) {
+	var config *rest.Config
+	if ctx.InCluster {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return client, err
 		}
-	}
-
-	// Check configuration errors in both cases
-	if err != nil {
-		return client, err
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags(ctx.MasterUrl, ctx.ConfigFilepath)
+		if err != nil {
+			return client, err
+		}
 	}
 
 	// Construct the client

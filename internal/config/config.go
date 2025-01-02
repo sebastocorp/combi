@@ -56,6 +56,8 @@ func ExpandEnv(input []byte) []byte {
 
 // checkConfig TODO
 func checkConfig(config *v1alpha3.CombiConfigT) error {
+	spacesRegex := regexp.MustCompile(`\s`)
+
 	configKindValues := []string{
 		ConfigKindValueJSON,
 		ConfigKindValueNGINX,
@@ -79,6 +81,10 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 	for _, sv := range config.Sources {
 		if !slices.Contains(srcTypeValues, sv.Type) {
 			return fmt.Errorf("source '%s' type field must be one of this %v", sv.Name, srcTypeValues)
+		}
+
+		if matched := spacesRegex.MatchString(sv.Name); matched {
+			return fmt.Errorf("source name '%s' contains spaces", sv.Name)
 		}
 
 		if _, ok := namesCount[sv.Name]; ok {
@@ -119,6 +125,10 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 
 	namesCount = map[string]int{}
 	for _, cv := range config.Behavior.Conditions {
+		if matched := spacesRegex.MatchString(cv.Name); matched {
+			return fmt.Errorf("condition name '%s' contains spaces", cv.Name)
+		}
+
 		if _, ok := namesCount[cv.Name]; ok {
 			return fmt.Errorf("source '%s' is duplicated", cv.Name)
 		}
@@ -133,6 +143,10 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 		ConfigOnValueFAILURE,
 	}
 	for _, av := range config.Behavior.Actions {
+		if matched := spacesRegex.MatchString(av.Name); matched {
+			return fmt.Errorf("action name '%s' contains spaces", av.Name)
+		}
+
 		if !slices.Contains(onValues, av.On) {
 			return fmt.Errorf("action '%s' on field must be one of this %v", av.Name, onValues)
 		}

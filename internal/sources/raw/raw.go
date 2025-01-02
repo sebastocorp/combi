@@ -9,11 +9,13 @@ import (
 )
 
 type RawSourceT struct {
+	name       string
 	storConfig string
 }
 
 func NewRawSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *RawSourceT, err error) {
 	s = &RawSourceT{
+		name:       srcConf.Name,
 		storConfig: filepath.Join(srcpath, "config.raw.txt"),
 	}
 
@@ -21,6 +23,9 @@ func NewRawSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *RawSourceT
 	err = os.WriteFile(s.storConfig, content, 0777)
 
 	return s, err
+}
+func (s *RawSourceT) GetName() string {
+	return s.name
 }
 
 func (s *RawSourceT) SyncConfig() (bool, error) {

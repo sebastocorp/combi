@@ -1,12 +1,10 @@
 package libconfig
 
 import (
-	"os"
 	"regexp"
 )
 
 type LibconfigT struct {
-	ConfigStruct map[string]any
 }
 
 // ----------------------------------------------------------------
@@ -15,30 +13,18 @@ type LibconfigT struct {
 
 // Decode functions
 
-func (e *LibconfigT) DecodeConfig(filepath string) (err error) {
-	configBytes, err := os.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-
+func (e *LibconfigT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
 	configBytes = regexp.MustCompile(`#[^\n]*`).ReplaceAll(configBytes, []byte(""))
-
-	err = e.DecodeConfigBytes(configBytes)
-	return err
-}
-
-func (e *LibconfigT) DecodeConfigBytes(configBytes []byte) (err error) {
 	configStr := string(configBytes)
-	configStr = regexp.MustCompile(`#[^\n]*`).ReplaceAllString(configStr, "")
 
-	err = e.parseLibconfigString(configStr)
-	return err
+	cfg, err = e.parseLibconfigString(configStr)
+	return cfg, err
 }
 
 // Encode functions
 
-func (e *LibconfigT) EncodeConfigString() (configStr string) {
-	configStr += encodeConfigSettingString(e.ConfigStruct, 0)
+func (e *LibconfigT) EncodeConfigString(cfg map[string]any) (configStr string) {
+	configStr += encodeConfigSettingString(cfg, 0)
 	return configStr
 }
 

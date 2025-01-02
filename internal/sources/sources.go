@@ -10,6 +10,7 @@ import (
 )
 
 type SourceT interface {
+	GetName() string
 	SyncConfig() (bool, error)
 	GetConfig() ([]byte, error)
 }

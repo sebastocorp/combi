@@ -2,7 +2,6 @@ package nginx
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -37,21 +36,10 @@ type BlockT struct {
 // ----------------------------------------------------------------
 
 // Decode functions
-
-func (e *NginxT) DecodeConfig(filepath string) (err error) {
-	configBytes, err := os.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-
-	err = e.DecodeConfigBytes(configBytes)
-	return err
-}
-
-func (e *NginxT) DecodeConfigBytes(configBytes []byte) (err error) {
+func (e *NginxT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
 	// Remove one line comments in file
-	re := regexp.MustCompile(`#[^\n]*?\n`)
-	configStr := re.ReplaceAllString(string(configBytes), "\n")
+	configStr := regexp.MustCompile(`#[^\n]*?\n`).ReplaceAllString(string(configBytes), "\n")
+	configStr = regexp.MustCompile(`\n\s+`).ReplaceAllString(configStr, "\n")
 
 	// Format configuration to parse nginx config format by line
 	configStr = strings.Join(strings.Fields(configStr), " ")
@@ -59,13 +47,33 @@ func (e *NginxT) DecodeConfigBytes(configBytes []byte) (err error) {
 	configStr = strings.ReplaceAll(configStr, "{", " {\n")
 	configStr = strings.ReplaceAll(configStr, "}", "}\n")
 	configStr = strings.ReplaceAll(configStr, ";", " ;\n")
-	configStr = strings.ReplaceAll(configStr, "\n ", "\n")
 
 	// Parse formatted nginx configuration
 	configStrLines := strings.Split(configStr, "\n")
-	err = parseNginxBlockContent(&e.ConfigStruct, configStrLines)
-	return err
+	configStruct := BlockContentT{}
+	err = parseNginxBlockContent(&configStruct, configStrLines)
+	cfg = e.ConfigToMap(&configStruct)
+	return cfg, err
 }
+
+// func (e *NginxT) DecodeConfigBytes(configBytes []byte) (err error) {
+// 	// Remove one line comments in file
+// 	re := regexp.MustCompile(`#[^\n]*?\n`)
+// 	configStr := re.ReplaceAllString(string(configBytes), "\n")
+
+// 	// Format configuration to parse nginx config format by line
+// 	configStr = strings.Join(strings.Fields(configStr), " ")
+// 	configStr = strings.ReplaceAll(configStr, "\n", "")
+// 	configStr = strings.ReplaceAll(configStr, "{", " {\n")
+// 	configStr = strings.ReplaceAll(configStr, "}", "}\n")
+// 	configStr = strings.ReplaceAll(configStr, ";", " ;\n")
+// 	configStr = strings.ReplaceAll(configStr, "\n ", "\n")
+
+// 	// Parse formatted nginx configuration
+// 	configStrLines := strings.Split(configStr, "\n")
+// 	err = parseNginxBlockContent(&e.ConfigStruct, configStrLines)
+// 	return err
+// }
 
 func parseNginxBlockContent(blockContent *BlockContentT, blockContentLines []string) (err error) {
 	// Parse block content

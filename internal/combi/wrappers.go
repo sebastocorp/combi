@@ -25,11 +25,11 @@ func (c *CombiT) setup(conf *v1alpha3.CombiConfigT) error {
 		return err
 	}
 
-	c.targetFilepath = filepath.Join(conf.Behavior.Target.Path, conf.Behavior.Target.File)
+	c.target.filepath = filepath.Join(conf.Behavior.Target.Path, conf.Behavior.Target.File)
+	c.target.mode = fs.FileMode(conf.Behavior.Target.Mode)
 
 	// Sources setup
 
-	c.srcs = map[string]sources.SourceT{}
 	for _, sv := range conf.Sources {
 		var hashKey string
 		hashKey, err = utils.GenHashString(sv.Type, sv.Name)
@@ -48,7 +48,17 @@ func (c *CombiT) setup(conf *v1alpha3.CombiConfigT) error {
 		if err != nil {
 			return err
 		}
-		c.srcs[hashKey] = src
+		c.srcs = append(c.srcs, src)
+	}
+
+	for _, cv := range conf.Behavior.Conditions {
+		cond := NewCondition(cv)
+		c.conds = append(c.conds, cond)
+	}
+
+	for _, av := range conf.Behavior.Actions {
+		act := NewAction(av)
+		c.acts = append(c.acts, act)
 	}
 
 	return nil

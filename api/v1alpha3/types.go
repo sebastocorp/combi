@@ -18,12 +18,12 @@ type LoggerConfigT struct {
 //--------------------------------------------------------------
 
 type SourceConfigT struct {
-	Name       string           `yaml:"name"`
-	Type       string           `yaml:"type"` // values: RAW|FILE|GIT|K8S
-	Raw        string           `yaml:"raw,omitempty"`
-	File       string           `yaml:"file,omitempty"`
-	Git        SourceGitConfigT `yaml:"git,omitempty"`
-	Kubernetes SourceK8sConfigT `yaml:"k8s,omitempty"`
+	Name string           `yaml:"name"`
+	Type string           `yaml:"type"` // values: RAW|FILE|GIT|K8S
+	Raw  string           `yaml:"raw,omitempty"`
+	File string           `yaml:"file,omitempty"`
+	Git  SourceGitConfigT `yaml:"git,omitempty"`
+	K8s  SourceK8sConfigT `yaml:"k8s,omitempty"`
 }
 
 type SourceGitConfigT struct {
@@ -34,10 +34,17 @@ type SourceGitConfigT struct {
 }
 
 type SourceK8sConfigT struct {
-	Kind      string `yaml:"kind"`
-	Namespace string `yaml:"namespace"`
-	Name      string `yaml:"name"`
-	Key       string `yaml:"key"`
+	Context   SourceK8sContextConfigT `yaml:"context"`
+	Kind      string                  `yaml:"kind"`
+	Namespace string                  `yaml:"namespace"`
+	Name      string                  `yaml:"name"`
+	Key       string                  `yaml:"key"`
+}
+
+type SourceK8sContextConfigT struct {
+	InCluster      bool   `yaml:"inCluster"`
+	ConfigFilepath string `yaml:"configFilepath"`
+	MasterUrl      string `yaml:"masterUrl"`
 }
 
 //--------------------------------------------------------------

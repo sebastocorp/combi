@@ -3,16 +3,31 @@ package globals
 import "strings"
 
 const (
-	LogKeyService = "service"
+	LogKeyService         = "service"
+	LogKeySourceName      = "sourceName"
+	LogKeyCondition       = "condition"
+	LogKeyConditionResult = "conditionResult"
+	LogKeyAction          = "action"
+	LogKeyError           = "error"
 
-	LogValueService    = "combi"
-	LogValueDefaultStr = "none"
+	LogValueService                = "combi"
+	LogValueDefaultStr             = "none"
+	LogValueConditionResultFAIL    = "FAIL"
+	LogValueConditionResultSUCCESS = "SUCCESS"
 )
 
 func GetLogCommonFields() map[string]any {
 	return map[string]any{
 		LogKeyService: LogValueService,
 	}
+}
+
+func SetLogField(logFields map[string]any, key string, val any) {
+	logFields[key] = val
+}
+
+func RemoveLogField(logFields map[string]any, key string) {
+	delete(logFields, key)
 }
 
 // CopyMap return a map that is a real copy of the original

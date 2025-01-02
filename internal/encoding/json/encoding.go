@@ -2,12 +2,10 @@ package json
 
 import (
 	"encoding/json"
-	"os"
 	"regexp"
 )
 
 type JsonT struct {
-	ConfigStruct interface{}
 }
 
 // ----------------------------------------------------------------
@@ -16,31 +14,21 @@ type JsonT struct {
 
 // Decode functions
 
-func (e *JsonT) DecodeConfig(filepath string) (err error) {
-	configBytes, err := os.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-
-	err = e.DecodeConfigBytes(configBytes)
-	return err
-}
-
-func (e *JsonT) DecodeConfigBytes(configBytes []byte) (err error) {
+func (e *JsonT) DecodeConfigBytes(configBytes []byte) (cfg map[string]any, err error) {
 	if ok, err := regexp.Match("^[ ]*$", configBytes); ok {
 		if err != nil {
-			return err
+			return cfg, err
 		}
 		configBytes = []byte("{}")
 	}
-	err = json.Unmarshal(configBytes, &e.ConfigStruct)
-	return err
+	err = json.Unmarshal(configBytes, &cfg)
+	return cfg, err
 }
 
 // Encode functions
 
-func (e *JsonT) EncodeConfigString() (configStr string) {
-	configBytes, _ := json.MarshalIndent(e.ConfigStruct, "", "  ")
+func (e *JsonT) EncodeConfigString(cfg map[string]any) (configStr string) {
+	configBytes, _ := json.MarshalIndent(cfg, "", "  ")
 	configStr = string(configBytes)
 	return configStr
 }

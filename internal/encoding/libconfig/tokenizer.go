@@ -280,12 +280,12 @@ func parseSettingValue(tokens []LibconfigTokenT) (value any, diff int, err error
 	return value, diff, err
 }
 
-func (e *LibconfigT) parseLibconfigString(config string) (err error) {
+func (e *LibconfigT) parseLibconfigString(config string) (cfg map[string]any, err error) {
 	tokens, err := parseTokens(config)
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
-	e.ConfigStruct, err = parseSettings(tokens)
-	return err
+	cfg, err = parseSettings(tokens)
+	return cfg, err
 }
