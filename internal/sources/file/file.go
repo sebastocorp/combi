@@ -21,17 +21,6 @@ func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourc
 		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.File)),
 	}
 
-	var configBytes []byte
-	configBytes, err = os.ReadFile(s.srcConfig)
-	if err != nil {
-		return s, err
-	}
-
-	err = os.WriteFile(s.storConfig, configBytes, 0777)
-	if err != nil {
-		return s, err
-	}
-
 	return s, err
 }
 
@@ -47,6 +36,13 @@ func (s *FileSourceT) SyncConfig() (updated bool, err error) {
 
 	storBytes, err := os.ReadFile(s.storConfig)
 	if err != nil {
+		if os.IsNotExist(err) {
+			updated = true
+			err = os.WriteFile(s.storConfig, srcBytes, 0777)
+			if err != nil {
+				return updated, err
+			}
+		}
 		return updated, err
 	}
 

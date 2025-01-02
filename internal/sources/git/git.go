@@ -100,6 +100,10 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
+		err = os.WriteFile(s.storConfig, srcBytes, 0777)
+		if err != nil {
+			return updated, err
+		}
 	}
 
 	return updated, err

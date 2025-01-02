@@ -60,7 +60,7 @@ func (c *CombiT) Run() {
 		time.Sleep(c.syncTime)
 		c.log.Info("init config sync", extraLogFields)
 
-		// sources sync
+		// sync sources
 		updatedList := []bool{}
 		for _, sv := range c.srcs {
 			globals.SetLogField(extraLogFields, globals.LogKeySourceName, sv.GetName())
@@ -95,7 +95,7 @@ func (c *CombiT) Run() {
 			continue
 		}
 
-		// sources decode and merge
+		// decode and merge sources
 		cfgResult := map[string]any{}
 		for _, sv := range c.srcs {
 			globals.SetLogField(extraLogFields, globals.LogKeySourceName, sv.GetName())
@@ -123,7 +123,7 @@ func (c *CombiT) Run() {
 		}
 		globals.RemoveLogField(extraLogFields, globals.LogKeySourceName)
 
-		// config conditions check
+		// check config conditions
 		condsResult := config.ConfigOnValueSUCCESS
 		for _, cv := range c.conds {
 			globals.RemoveLogField(extraLogFields, globals.LogKeyConditionResult)
@@ -152,7 +152,7 @@ func (c *CombiT) Run() {
 		globals.RemoveLogField(extraLogFields, globals.LogKeyCondition)
 		globals.RemoveLogField(extraLogFields, globals.LogKeyConditionResult)
 
-		// config encode and create
+		// config encode and create target file
 		cfgResiltStr := c.encoder.EncodeConfigString(cfgResult)
 		err = os.WriteFile(c.target.filepath, []byte(cfgResiltStr), c.target.mode)
 		if err != nil {
@@ -162,7 +162,6 @@ func (c *CombiT) Run() {
 		}
 
 		// execute actions
-
 		for _, av := range c.acts {
 			globals.SetLogField(extraLogFields, globals.LogKeyAction, av)
 
