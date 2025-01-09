@@ -50,11 +50,11 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 }
 
 func (c *CombiT) Run() {
-	c.log.Info("init combi", map[string]any{})
+	c.log.Info("init combi", nil)
 
 	var err error
 	for {
-		extraLogFields := map[string]any{}
+		var extraLogFields logger.ExtraFieldsT = globals.GetLogCommonFields()
 		c.log.Debug("waiting next sync", extraLogFields)
 
 		time.Sleep(c.syncTime)
@@ -63,19 +63,19 @@ func (c *CombiT) Run() {
 		// sync sources
 		updatedList := []bool{}
 		for _, sv := range c.srcs {
-			globals.SetLogField(extraLogFields, globals.LogKeySourceName, sv.GetName())
+			extraLogFields.Set(globals.LogKeySourceName, sv.GetName())
 
 			var updated bool
 			updated, err = sv.SyncConfig()
 			if err != nil {
-				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("source sync failed", extraLogFields)
 				break
 			}
 
 			updatedList = append(updatedList, updated)
 		}
-		globals.RemoveLogField(extraLogFields, globals.LogKeySourceName)
+		extraLogFields.Del(globals.LogKeySourceName)
 		if err != nil {
 			continue
 		}
@@ -83,7 +83,7 @@ func (c *CombiT) Run() {
 		tFileExist := true
 		if _, err = os.Stat(c.target.filepath); err != nil {
 			if !os.IsNotExist(err) {
-				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to check target file", extraLogFields)
 				continue
 			}
@@ -98,12 +98,12 @@ func (c *CombiT) Run() {
 		// decode and merge sources
 		cfgResult := map[string]any{}
 		for _, sv := range c.srcs {
-			globals.SetLogField(extraLogFields, globals.LogKeySourceName, sv.GetName())
+			extraLogFields.Set(globals.LogKeySourceName, sv.GetName())
 
 			var cfgBytes []byte
 			cfgBytes, err = sv.GetConfig()
 			if err != nil {
-				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to get source", extraLogFields)
 				break
 			}
@@ -111,7 +111,7 @@ func (c *CombiT) Run() {
 			var cfg map[string]any
 			cfg, err = c.encoder.DecodeConfig(cfgBytes)
 			if err != nil {
-				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to decode source", extraLogFields)
 				break
 			}
@@ -121,25 +121,25 @@ func (c *CombiT) Run() {
 		if err != nil {
 			continue
 		}
-		globals.RemoveLogField(extraLogFields, globals.LogKeySourceName)
+		extraLogFields.Del(globals.LogKeySourceName)
 
 		// check config conditions
 		condsResult := config.ConfigOnValueSUCCESS
 		for _, cv := range c.conds {
-			globals.RemoveLogField(extraLogFields, globals.LogKeyConditionResult)
-			globals.SetLogField(extraLogFields, globals.LogKeyCondition, cv)
+			extraLogFields.Del(globals.LogKeyConditionResult)
+			extraLogFields.Set(globals.LogKeyCondition, cv)
 
 			var succ bool
 			succ, err = cv.Eval(cfgResult)
 			if err != nil {
-				globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to evaluate condition", extraLogFields)
 				break
 			}
 
-			globals.SetLogField(extraLogFields, globals.LogKeyConditionResult, globals.LogValueConditionResultSUCCESS)
+			extraLogFields.Set(globals.LogKeyConditionResult, globals.LogValueConditionResultSUCCESS)
 			if !succ {
-				globals.SetLogField(extraLogFields, globals.LogKeyConditionResult, globals.LogValueConditionResultFAIL)
+				extraLogFields.Set(globals.LogKeyConditionResult, globals.LogValueConditionResultFAIL)
 				if cv.Mandatory {
 					condsResult = config.ConfigOnValueFAILURE
 				}
@@ -149,33 +149,33 @@ func (c *CombiT) Run() {
 		if err != nil {
 			continue
 		}
-		globals.RemoveLogField(extraLogFields, globals.LogKeyCondition)
-		globals.RemoveLogField(extraLogFields, globals.LogKeyConditionResult)
+		extraLogFields.Del(globals.LogKeyCondition)
+		extraLogFields.Del(globals.LogKeyConditionResult)
 
 		// config encode and create target file
 		var cfgResultBytes []byte
 		cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
 		if err != nil {
-			globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+			extraLogFields.Set(globals.LogKeyError, err.Error())
 			c.log.Error("unable to generate config", extraLogFields)
 			continue
 		}
 
 		err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
 		if err != nil {
-			globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+			extraLogFields.Set(globals.LogKeyError, err.Error())
 			c.log.Error("unable to create target file", extraLogFields)
 			continue
 		}
 
 		// execute actions
 		for _, av := range c.acts {
-			globals.SetLogField(extraLogFields, globals.LogKeyAction, av)
+			extraLogFields.Set(globals.LogKeyAction, av)
 
 			if av.On == condsResult {
 				err = av.Exec()
 				if err != nil {
-					globals.SetLogField(extraLogFields, globals.LogKeyError, err.Error())
+					extraLogFields.Set(globals.LogKeyError, err.Error())
 					c.log.Error("unable to execute action", extraLogFields)
 					break
 				}
@@ -185,7 +185,7 @@ func (c *CombiT) Run() {
 		if err != nil {
 			continue
 		}
-		globals.RemoveLogField(extraLogFields, globals.LogKeyAction)
+		extraLogFields.Del(globals.LogKeyAction)
 
 		c.log.Info("success in config sync", extraLogFields)
 	}

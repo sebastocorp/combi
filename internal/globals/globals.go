@@ -22,14 +22,6 @@ func GetLogCommonFields() map[string]any {
 	}
 }
 
-func SetLogField(logFields map[string]any, key string, val any) {
-	logFields[key] = val
-}
-
-func RemoveLogField(logFields map[string]any, key string) {
-	delete(logFields, key)
-}
-
 // CopyMap return a map that is a real copy of the original
 // Ref: https://go.dev/blog/maps
 func CopyMap(src map[string]interface{}) map[string]interface{} {

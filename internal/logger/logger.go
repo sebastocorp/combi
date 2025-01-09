@@ -16,24 +16,69 @@ const (
 	INFO  LevelT = LevelT(slog.LevelInfo)
 	WARN  LevelT = LevelT(slog.LevelWarn)
 	ERROR LevelT = LevelT(slog.LevelError)
+
+	extraFieldName = "extra"
 )
 
-type LoggerT struct {
-	Logger       *slog.Logger
-	CommonFields map[string]any
+type ExtraFieldsT map[string]any
+
+func (e ExtraFieldsT) Set(key string, val any) {
+	e[key] = val
 }
 
-func NewLogger(level LevelT, commonFields map[string]any) (logger LoggerT) {
-	logger.CommonFields = commonFields
+func (e ExtraFieldsT) Del(key string) {
+	delete(e, key)
+}
 
+type LoggerT struct {
+	logger *slog.Logger
+}
+
+func NewLogger(level LevelT) (logger LoggerT) {
 	opts := &slog.HandlerOptions{
 		AddSource: false,
 		Level:     slog.Level(level),
 	}
 	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
-	logger.Logger = slog.New(jsonHandler)
+	logger.logger = slog.New(jsonHandler)
 
 	return logger
+}
+
+func (l *LoggerT) Debug(msg string, extra ExtraFieldsT) {
+	if extra == nil {
+		extra = make(ExtraFieldsT)
+	}
+	l.logger.Debug(msg, extraFieldName, extra)
+}
+
+func (l *LoggerT) Info(msg string, extra ExtraFieldsT) {
+	if extra == nil {
+		extra = make(ExtraFieldsT)
+	}
+	l.logger.Info(msg, extraFieldName, extra)
+}
+
+func (l *LoggerT) Warn(msg string, extra ExtraFieldsT) {
+	if extra == nil {
+		extra = make(ExtraFieldsT)
+	}
+	l.logger.Warn(msg, extraFieldName, extra)
+}
+
+func (l *LoggerT) Error(msg string, extra ExtraFieldsT) {
+	if extra == nil {
+		extra = make(ExtraFieldsT)
+	}
+	l.logger.Error(msg, extraFieldName, extra)
+}
+
+func (l *LoggerT) Fatal(msg string, extra ExtraFieldsT) {
+	if extra == nil {
+		extra = make(ExtraFieldsT)
+	}
+	l.logger.Error(msg, extraFieldName, extra)
+	os.Exit(1)
 }
 
 func GetLevel(levelStr string) (l LevelT) {
@@ -50,75 +95,4 @@ func GetLevel(levelStr string) (l LevelT) {
 	}
 
 	return l
-}
-
-func (l *LoggerT) Debug(msg string, extraFields map[string]any) {
-	extraFieldsArr := []any{}
-
-	for k, v := range l.CommonFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	for k, v := range extraFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	l.Logger.Debug(msg, extraFieldsArr...)
-}
-
-func (l *LoggerT) Info(msg string, extraFields map[string]any) {
-	extraFieldsArr := []any{}
-
-	for k, v := range l.CommonFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	for k, v := range extraFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	l.Logger.Info(msg, extraFieldsArr...)
-}
-
-func (l *LoggerT) Warn(msg string, extraFields map[string]any) {
-	extraFieldsArr := []any{}
-
-	for k, v := range l.CommonFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	for k, v := range extraFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	l.Logger.Warn(msg, extraFieldsArr...)
-}
-
-func (l *LoggerT) Error(msg string, extraFields map[string]any) {
-	extraFieldsArr := []any{}
-
-	for k, v := range l.CommonFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	for k, v := range extraFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	l.Logger.Error(msg, extraFieldsArr...)
-}
-
-func (l *LoggerT) Fatal(msg string, extraFields map[string]any) {
-	extraFieldsArr := []any{}
-
-	for k, v := range l.CommonFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	for k, v := range extraFields {
-		extraFieldsArr = append(extraFieldsArr, k, v)
-	}
-
-	l.Logger.Error(msg, extraFieldsArr...)
-	os.Exit(1)
 }

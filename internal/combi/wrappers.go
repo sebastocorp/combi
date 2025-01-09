@@ -3,7 +3,6 @@ package combi
 import (
 	"combi/api/v1alpha3"
 	"combi/internal/encoding"
-	"combi/internal/globals"
 	"combi/internal/logger"
 	"combi/internal/sources"
 	"combi/internal/utils"
@@ -14,7 +13,7 @@ import (
 
 // setup TODO
 func (c *CombiT) setup(conf *v1alpha3.CombiConfigT) error {
-	c.log = logger.NewLogger(logger.GetLevel(conf.Logger.Level), globals.GetLogCommonFields())
+	c.log = logger.NewLogger(logger.GetLevel(conf.Logger.Level))
 	c.syncTime = conf.Behavior.SyncTime
 	c.encoder = encoding.GetEncoder(conf.Kind)
 
