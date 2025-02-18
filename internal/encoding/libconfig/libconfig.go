@@ -14,7 +14,7 @@ func (e *LibconfigT) DecodeConfig(cfgBytes []byte) (cfg map[string]any, err erro
 	}
 
 	cfg = make(map[string]any)
-	err = encodeSettingsTokens(ts, cfg)
+	err = decodeSettingsTokens(ts, cfg)
 	if err != nil {
 		return nil, err
 	}

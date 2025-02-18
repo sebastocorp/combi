@@ -2,194 +2,9 @@ package libconfig
 
 import (
 	"fmt"
-	"regexp"
-	"slices"
 )
 
-const (
-	TOKEN_TYPE_NAME TokenTypeT = iota
-	TOKEN_TYPE_VALUE
-	TOKEN_TYPE_EQUAL         // ':', '='
-	TOKEN_TYPE_SEPARATOR     // ';', ','
-	TOKEN_TYPE_BRACKET_OPEN  // '['
-	TOKEN_TYPE_BRACKET_CLOSE // ']'
-	TOKEN_TYPE_PAREN_OPEN    // ')'
-	TOKEN_TYPE_PAREN_CLOSE   // '('
-	TOKEN_TYPE_BRACE_OPEN    // '{'
-	TOKEN_TYPE_BRACE_CLOSE   // '}'
-)
-
-var (
-	tokenTypeRegexName    = regexp.MustCompile(`^[A-Za-z][-A-Za-z0-9_]*$`)
-	tokenTypeRegexBool    = regexp.MustCompile(`^([Tt][Rr][Uu][Ee])|([Ff][Aa][Ll][Ss][Ee])$`)
-	tokenTypeRegexInteger = regexp.MustCompile(`^[-+]?[0-9]+(L(L)?)?$`)
-	tokenTypeRegexHex     = regexp.MustCompile(`^0[Xx][0-9A-Fa-f]+(L(L)?)?$`)
-	tokenTypeRegexFloat   = regexp.MustCompile(`^([-+]?([0-9]*)?.[0-9]*([eE][-+]?[0-9]+)?)|([-+]([0-9]+)(.[0-9]*)?[eE][-+]?[0-9]+)$`)
-)
-
-type TokenTypeT int
-
-type TokenT struct {
-	ttype TokenTypeT
-	token string
-}
-
-func tokenize(cfgBytes []byte) (tokens []TokenT, err error) {
-	cfgBytesLen := len(cfgBytes)
-	index := 0
-	for index < cfgBytesLen {
-		if isSpace(cfgBytes[index]) {
-			index++
-			continue
-		}
-
-		if isEqual(cfgBytes[index]) {
-			tokens = append(tokens, TokenT{
-				ttype: TOKEN_TYPE_EQUAL,
-				token: string(cfgBytes[index : index+1]),
-			})
-			index++
-			continue
-		}
-
-		if isSeparator(cfgBytes[index]) {
-			tokens = append(tokens, TokenT{
-				ttype: TOKEN_TYPE_SEPARATOR,
-				token: string(cfgBytes[index : index+1]),
-			})
-			index++
-			continue
-		}
-
-		if isScope(cfgBytes[index]) {
-			tokens = append(tokens, getScopeToken(cfgBytes[index]))
-			index++
-			continue
-		}
-
-		t, err := getToken(cfgBytes[index:])
-		if err != nil {
-			return tokens, err
-		}
-		tokens = append(tokens, t)
-		index += len(t.token)
-	}
-
-	return tokens, err
-}
-
-func isSpace(b byte) bool {
-	return slices.Contains([]byte{' ', '\t', '\n'}, b)
-}
-
-func isEqual(b byte) bool {
-	return slices.Contains([]byte{':', '='}, b)
-}
-
-func isSeparator(b byte) bool {
-	return slices.Contains([]byte{';', ','}, b)
-}
-
-func isScope(b byte) bool {
-	return slices.Contains([]byte{'[', ']', '(', ')', '{', '}'}, b)
-}
-
-func getScopeToken(b byte) (t TokenT) {
-	t.token = string([]byte{b})
-	switch b {
-	case '[':
-		t.ttype = TOKEN_TYPE_BRACKET_OPEN
-	case ']':
-		t.ttype = TOKEN_TYPE_BRACKET_CLOSE
-	case '{':
-		t.ttype = TOKEN_TYPE_BRACE_OPEN
-	case '}':
-		t.ttype = TOKEN_TYPE_BRACE_CLOSE
-	case '(':
-		t.ttype = TOKEN_TYPE_PAREN_OPEN
-	case ')':
-		t.ttype = TOKEN_TYPE_PAREN_CLOSE
-	}
-
-	return t
-}
-
-func getToken(cfgBytes []byte) (t TokenT, err error) {
-	cfgBytesLen := len(cfgBytes)
-
-	if cfgBytes[0] == '"' {
-		t.ttype = TOKEN_TYPE_VALUE
-		i := 1
-		for ; i < cfgBytesLen; i++ {
-			if cfgBytes[i] == '"' && cfgBytes[i] != '\\' {
-				i++
-				break
-			}
-		}
-
-		t.token = string(cfgBytes[:i])
-
-		if t.token[len(t.token)-1] != '"' {
-			err = fmt.Errorf("unclosed string")
-		}
-
-		return t, err
-	}
-
-	i := 1
-	for ; i < cfgBytesLen; i++ {
-		if isSpace(cfgBytes[i]) || isEqual(cfgBytes[i]) || isSeparator(cfgBytes[i]) || isScope(cfgBytes[i]) {
-			break
-		}
-	}
-
-	t.token = string(cfgBytes[:i])
-
-	t.ttype, err = getTypeFromToken(t)
-
-	return t, err
-}
-
-func getTypeFromToken(t TokenT) (tt TokenTypeT, err error) {
-	tt = TOKEN_TYPE_NAME
-
-	if !tokenTypeRegexName.MatchString(t.token) {
-		if tokenTypeRegexBool.MatchString(t.token) ||
-			tokenTypeRegexInteger.MatchString(t.token) ||
-			tokenTypeRegexHex.MatchString(t.token) ||
-			tokenTypeRegexFloat.MatchString(t.token) {
-			tt = TOKEN_TYPE_VALUE
-		} else {
-			err = fmt.Errorf("unrecognize '%s' token type", t.token)
-		}
-	}
-
-	return tt, err
-}
-
-func getScopeOffset(ts []TokenT, openScopeType TokenTypeT) (offset int, err error) {
-	tsLen := len(ts)
-	open := 0
-	for ; offset < tsLen; offset++ {
-		if ts[offset].ttype == openScopeType {
-			open++
-		}
-		if ts[offset].ttype == openScopeType+1 {
-			open--
-			if open == 0 {
-				break
-			}
-		}
-	}
-
-	if open != 0 {
-		err = fmt.Errorf("malformed configuration, scope not closed")
-	}
-
-	return offset, err
-}
-
-func encodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
+func decodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
 	tsLen := len(ts)
 	index := 0
 	for index < tsLen {
@@ -225,7 +40,7 @@ func encodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
 					return err
 				}
 
-				cfg[ts[index].token], err = encodeArrayTokens(ts[valueIndex+1 : valueIndex+offset])
+				cfg[ts[index].token], err = decodeArrayTokens(ts[valueIndex+1 : valueIndex+offset])
 				if err != nil {
 					return err
 				}
@@ -240,7 +55,7 @@ func encodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
 					return err
 				}
 
-				cfg[ts[index].token], err = encodeListTokens(ts[valueIndex+1 : valueIndex+offset])
+				cfg[ts[index].token], err = decodeListTokens(ts[valueIndex+1 : valueIndex+offset])
 				if err != nil {
 					return err
 				}
@@ -256,7 +71,7 @@ func encodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
 				}
 
 				cfg[ts[index].token] = make(map[string]any)
-				err = encodeSettingsTokens(ts[valueIndex+1:valueIndex+offset], cfg[ts[index].token].(map[string]any))
+				err = decodeSettingsTokens(ts[valueIndex+1:valueIndex+offset], cfg[ts[index].token].(map[string]any))
 				if err != nil {
 					return err
 				}
@@ -274,7 +89,7 @@ func encodeSettingsTokens(ts []TokenT, cfg map[string]any) (err error) {
 	return nil
 }
 
-func encodeArrayTokens(ts []TokenT) (array []any, err error) {
+func decodeArrayTokens(ts []TokenT) (array []any, err error) {
 	tsLen := len(ts)
 	index := 0
 	for index < tsLen {
@@ -295,7 +110,7 @@ func encodeArrayTokens(ts []TokenT) (array []any, err error) {
 	return array, err
 }
 
-func encodeListTokens(ts []TokenT) (list []any, err error) {
+func decodeListTokens(ts []TokenT) (list []any, err error) {
 	tsLen := len(ts)
 	index := 0
 	for index < tsLen {
@@ -311,7 +126,7 @@ func encodeListTokens(ts []TokenT) (list []any, err error) {
 					return list, err
 				}
 
-				array, err := encodeArrayTokens(ts[index+1 : index+offset])
+				array, err := decodeArrayTokens(ts[index+1 : index+offset])
 				if err != nil {
 					return list, err
 				}
@@ -326,7 +141,7 @@ func encodeListTokens(ts []TokenT) (list []any, err error) {
 					return list, err
 				}
 
-				subList, err := encodeListTokens(ts[index+1 : index+offset])
+				subList, err := decodeListTokens(ts[index+1 : index+offset])
 				if err != nil {
 					return list, err
 				}
@@ -342,7 +157,7 @@ func encodeListTokens(ts []TokenT) (list []any, err error) {
 				}
 
 				group := make(map[string]any)
-				err = encodeSettingsTokens(ts[index+1:index+offset], group)
+				err = decodeSettingsTokens(ts[index+1:index+offset], group)
 				if err != nil {
 					return list, err
 				}
@@ -366,4 +181,26 @@ func encodeListTokens(ts []TokenT) (list []any, err error) {
 	}
 
 	return list, err
+}
+
+func getScopeOffset(ts []TokenT, openScopeType TokenTypeT) (offset int, err error) {
+	tsLen := len(ts)
+	open := 0
+	for ; offset < tsLen; offset++ {
+		if ts[offset].ttype == openScopeType {
+			open++
+		}
+		if ts[offset].ttype == openScopeType+1 {
+			open--
+			if open == 0 {
+				break
+			}
+		}
+	}
+
+	if open != 0 {
+		err = fmt.Errorf("malformed configuration, scope not closed")
+	}
+
+	return offset, err
 }
