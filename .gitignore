@@ -21,4 +21,6 @@ bin/
 # Go workspace file
 go.work
 
-int.tests/
+int.test/
+int.tmp/
+int.proto/

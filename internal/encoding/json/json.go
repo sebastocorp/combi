@@ -5,14 +5,12 @@ import (
 	"regexp"
 )
 
+// ----------------------------------------------------------------
+// Decode/Encode/Merge JSON data structure
+// ----------------------------------------------------------------
+
 type JsonT struct {
 }
-
-// ----------------------------------------------------------------
-// Decode/Encode JSON data structure
-// ----------------------------------------------------------------
-
-// Decode functions
 
 func (e *JsonT) DecodeConfig(configBytes []byte) (cfg map[string]any, err error) {
 	if ok, err := regexp.Match(`^\s*$`, configBytes); ok {
@@ -25,8 +23,11 @@ func (e *JsonT) DecodeConfig(configBytes []byte) (cfg map[string]any, err error)
 	return cfg, err
 }
 
-// Encode functions
-
 func (e *JsonT) EncodeConfig(cfg map[string]any) (configBytes []byte, err error) {
 	return json.MarshalIndent(cfg, "", "  ")
+}
+
+func (e *JsonT) MergeConfigs(dst, src map[string]any) error {
+	mergeJsonObjects(dst, src)
+	return nil
 }
