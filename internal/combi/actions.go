@@ -1,7 +1,6 @@
 package combi
 
 import (
-	"os"
 	"os/exec"
 
 	"combi/api/v1alpha3"
@@ -23,9 +22,6 @@ func NewAction(action v1alpha3.ActionConfigT) ActionT {
 	}
 }
 
-func (a *ActionT) Exec() error {
-	command := exec.Command(a.cmd[0], a.cmd[1:]...)
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	return command.Run()
+func (a *ActionT) Exec() (out []byte, err error) {
+	return exec.Command(a.cmd[0], a.cmd[1:]...).CombinedOutput()
 }

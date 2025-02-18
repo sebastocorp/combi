@@ -153,19 +153,21 @@ func (c *CombiT) Run() {
 		extraLogFields.Del(globals.LogKeyConditionResult)
 
 		// config encode and create target file
-		var cfgResultBytes []byte
-		cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
-		if err != nil {
-			extraLogFields.Set(globals.LogKeyError, err.Error())
-			c.log.Error("unable to generate config", extraLogFields)
-			continue
-		}
+		if condsResult == config.ConfigOnValueSUCCESS {
+			var cfgResultBytes []byte
+			cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
+			if err != nil {
+				extraLogFields.Set(globals.LogKeyError, err.Error())
+				c.log.Error("unable to generate config", extraLogFields)
+				continue
+			}
 
-		err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
-		if err != nil {
-			extraLogFields.Set(globals.LogKeyError, err.Error())
-			c.log.Error("unable to create target file", extraLogFields)
-			continue
+			err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
+			if err != nil {
+				extraLogFields.Set(globals.LogKeyError, err.Error())
+				c.log.Error("unable to create target file", extraLogFields)
+				continue
+			}
 		}
 
 		// execute actions
@@ -173,13 +175,16 @@ func (c *CombiT) Run() {
 			extraLogFields.Set(globals.LogKeyAction, av)
 
 			if av.On == condsResult {
-				err = av.Exec()
+				var out []byte
+				out, err = av.Exec()
 				if err != nil {
 					extraLogFields.Set(globals.LogKeyError, err.Error())
 					c.log.Error("unable to execute action", extraLogFields)
 					break
 				}
+				extraLogFields.Set(globals.LogKeyActionOutput, string(out))
 				c.log.Debug("action executed", extraLogFields)
+				extraLogFields.Del(globals.LogKeyActionOutput)
 			}
 		}
 		if err != nil {
