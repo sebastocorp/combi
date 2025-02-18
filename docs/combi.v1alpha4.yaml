@@ -1,4 +1,4 @@
-kind: "" # JSON|NGINX|LIBCONFIG
+kind: "" # JSON|YAML|LIBCONFIG|NGINX
 
 settings:
   logger:

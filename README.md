@@ -45,7 +45,7 @@ Current configuration version: `v1alpha4`
 
 | Field | Description |
 |:--- |:--- |
-| `kind`                                 | Type of the main configuration, specified as a string. |
+| `kind`                                 | Type of the main configuration, specified as a string (values: "LIBCONFIG", "JSON", "YAML", "NGINX"). |
 | `settings.logger.level`                | Log level (e.g., "info", "debug", "error"). |
 | `settings.syncTime`                    | Sync time for the configuration, specified as `time.Duration`. |
 | `settings.tmpObjs.path`                | Path where temporary objects will be stored. |
@@ -249,10 +249,10 @@ behavior:
 
 | Format      | Status |
 |:---         |:---    |
+| `yaml`      | ✅     |
 | `json`      | ✅     |
-| `nginx`     | ✅     |
 | `libconfig` | ✅     |
-| `yaml`      | ❌     |
+| `nginx`     | ✅     |
 | `hcl`       | ❌     |
 
 ## How to collaborate

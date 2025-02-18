@@ -4,6 +4,7 @@ import (
 	"combi/internal/config"
 	"combi/internal/encoding/json"
 	"combi/internal/encoding/libconfig"
+	"combi/internal/encoding/yaml"
 )
 
 type EncoderT interface {
@@ -17,9 +18,10 @@ type EncoderT interface {
 
 func GetEncoder(encType string) EncoderT {
 	encoders := map[string]EncoderT{
-		config.ConfigKindValueJSON: &json.JsonT{},
-		// config.ConfigKindValueNGINX:     &nginx.NginxT{},
+		config.ConfigKindValueJSON:      &json.JsonT{},
+		config.ConfigKindValueYAML:      &yaml.YamlT{},
 		config.ConfigKindValueLIBCONFIG: &libconfig.LibconfigT{},
+		// config.ConfigKindValueNGINX:     &nginx.NginxT{},
 	}
 	return encoders[encType]
 }

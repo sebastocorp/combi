@@ -14,6 +14,7 @@ import (
 
 const (
 	ConfigKindValueJSON      = "JSON"
+	ConfigKindValueYAML      = "YAML"
 	ConfigKindValueNGINX     = "NGINX"
 	ConfigKindValueLIBCONFIG = "LIBCONFIG"
 
