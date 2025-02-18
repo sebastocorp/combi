@@ -29,19 +29,24 @@ It may also be the case that you want 2 parts of the same config separated from 
 
 Thinking about these problems and possible solutions, we have decided to create this tool, which is not only capable of centralizing the different configurations of the same format, but is also capable of performing checks on the final configuration and executing the commands necessary to refresh the configuration.
 
-## Flags
+## How to use
+
+This project provides the binary files and container image in differents architectures to make it easy to use wherever wanted.
+
+```sh
+combi run \
+    --config=/config/combi.yaml
+```
+
+### Flags
 
 | Name     | Command | Default      | Description |
 |:---      |:---     |:---          |:---         |
 | `config` | `run`   | `combi.yaml` | Filepath where configuration in located. |
 
-## How to use
-
-This project provides the binary files and container image in differents architectures to make it easy to use wherever wanted.
-
 ### Configuration
 
-Current configuration version: `v1alpha4`
+Current configuration api: `v1alpha4`
 
 | Field | Description |
 |:--- |:--- |
@@ -141,110 +146,6 @@ Synchronization flow diagram:
 └────────────────────┘ └──────────────────┘                      
 ```
 
-## Example
-
-To consume a configuration in a git repository (with specific branch) and merge in a local config with `libconfig` format:
-
-```sh
-combi run \
-    --config=/config/combi.yaml
-```
-
-The combi config.yaml:
-
-```yaml
-kind: LIBCONFIG
-
-settings:
-  logger:
-    level: debug # info|warning|error|debug
-  syncTime: 5s
-  tmpObjs:
-    path: /tmp/combi
-    mode: 0777
-  target:
-    path: /etc/service/target
-    file: merged.cnf
-    mode: 0777
-
-sources:
-  - name: config1
-    type: RAW
-    raw: |
-      int32field=2
-      int64field=500L
-      string_example="some-value"
-      group_example=
-      {
-        admin_credentials="root:pass"
-        addr="0.0.0.0:6032"
-      }
-  - name: config2
-    type: RAW
-    raw: |
-      mysql_variables=
-      {
-        threads=2
-        max_connections=500
-      }
-
-      mysql_servers =
-      (
-        { address="127.0.0.1" , port=3306 , hostgroup=0 , max_connections=1000, weight=1 },
-        { address="127.0.0.2" , port=3306 , hostgroup=1 , max_connections=1000, weight=1 },
-      )
-      
-      mysql_users:
-      (
-        { username = "writer" , password = "pass" , default_hostgroup = 0 , active = 1 },
-        { username = "reader" , password = "pass" , default_hostgroup = 1 , active = 1 },
-      )
-
-behavior:
-  conditions:
-    - name: "search primitive value to check condition"
-      mandatory: true
-      template: |
-        {{- $config := . -}}
-        {{- printf "%s" $config.int64field -}}
-      expect: "500L"
-    - name: "search group value to check condition"
-      mandatory: true
-      template: |
-        {{- $config := . -}}
-        {{- printf "%s" $config.mysql_variables.threads -}}
-      expect: "2"
-    - name: "search list value to check condition"
-      mandatory: true
-      template: |
-        {{- $config := . -}}
-          {{- range $i, $v := $config.mysql_servers -}}
-              {{- if (eq $v.hostgroup "0" ) -}}
-                {{- printf "%s" $v.max_connections -}}
-              {{- end -}}
-          {{- end -}}
-      expect: "1000"
-    - name: "search env variable to check condition"
-      mandatory: false
-      template: |
-        {{- printf "%s" (env "MANDATORY_ENV_VAR") -}}
-      expect: "true"
-
-  actions:
-    - name: "execute-success-message-config-action"
-      on: SUCCESS
-      command:
-      - echo
-      - -e
-      - "success in config for you"
-    - name: "execute-failure-message-config-action"
-      on: FAILURE
-      command:
-      - echo
-      - -e
-      - "fail in config for you"
-```
-
 ## Supported configuration formats
 
 | Format      | Status |
@@ -252,7 +153,7 @@ behavior:
 | `yaml`      | ✅     |
 | `json`      | ✅     |
 | `libconfig` | ✅     |
-| `nginx`     | ✅     |
+| `nginx`     | ❌     |
 | `hcl`       | ❌     |
 
 ## How to collaborate
