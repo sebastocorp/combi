@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/config"
 )
 
@@ -13,7 +13,7 @@ type RawSourceT struct {
 	storConfig string
 }
 
-func NewRawSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *RawSourceT, err error) {
+func NewRawSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *RawSourceT, err error) {
 	s = &RawSourceT{
 		name:       srcConf.Name,
 		storConfig: filepath.Join(srcpath, "config.raw.txt"),

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/config"
 
 	"github.com/go-git/go-git/v5"
@@ -28,7 +28,7 @@ type repoT struct {
 	branch   string
 }
 
-func NewGitSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *GitSourceT, err error) {
+func NewGitSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *GitSourceT, err error) {
 	s = &GitSourceT{
 		name:       srcConf.Name,
 		srcConfig:  filepath.Join(srcpath, "sync/repo", srcConf.Git.Filepath),

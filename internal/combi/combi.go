@@ -30,12 +30,12 @@ type TargetT struct {
 }
 
 func NewCombi(configFilePath string) (c *CombiT, err error) {
-	fileBytes, err := os.ReadFile(configFilePath)
+	cfgBytes, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return c, err
 	}
 
-	conf, err := config.ParseConfig(fileBytes)
+	conf, err := config.ParseConfig(cfgBytes)
 	if err != nil {
 		return c, err
 	}

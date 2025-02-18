@@ -3,7 +3,7 @@ package combi
 import (
 	"os/exec"
 
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 )
 
 type ActionT struct {
@@ -13,7 +13,7 @@ type ActionT struct {
 	cmd []string `json:"-"`
 }
 
-func NewAction(action v1alpha3.ActionConfigT) ActionT {
+func NewAction(action v1alpha4.ActionConfigT) ActionT {
 	return ActionT{
 		Name: action.Name,
 		On:   action.On,

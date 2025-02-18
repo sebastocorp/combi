@@ -1,7 +1,7 @@
 package sources
 
 import (
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/config"
 	"combi/internal/sources/file"
 	"combi/internal/sources/git"
@@ -15,23 +15,23 @@ type SourceT interface {
 	GetConfig() ([]byte, error)
 }
 
-func GetSource(srcConf v1alpha3.SourceConfigT, srcpath string) (SourceT, error) {
-	switch srcConf.Type {
+func GetSource(srcCfg v1alpha4.SourceConfigT, srcpath string) (SourceT, error) {
+	switch srcCfg.Type {
 	case config.ConfigSourceTypeValueRAW:
 		{
-			return raw.NewRawSource(srcConf, srcpath)
+			return raw.NewRawSource(srcCfg, srcpath)
 		}
 	case config.ConfigSourceTypeValueFILE:
 		{
-			return file.NewFileSource(srcConf, srcpath)
+			return file.NewFileSource(srcCfg, srcpath)
 		}
 	case config.ConfigSourceTypeValueGIT:
 		{
-			return git.NewGitSource(srcConf, srcpath)
+			return git.NewGitSource(srcCfg, srcpath)
 		}
 	case config.ConfigSourceTypeValueK8S:
 		{
-			return k8s.NewK8sSource(srcConf, srcpath)
+			return k8s.NewK8sSource(srcCfg, srcpath)
 		}
 	}
 	return nil, nil

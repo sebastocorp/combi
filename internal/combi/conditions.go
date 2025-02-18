@@ -1,36 +1,52 @@
 package combi
 
 import (
-	"combi/api/v1alpha3"
-	"combi/internal/template"
+	"bytes"
+	"combi/api/v1alpha4"
+	"combi/internal/tmpl"
+	"regexp"
+	"text/template"
 )
 
 type ConditionT struct {
 	Name      string `json:"name"`
 	Mandatory bool   `json:"mandatory"`
 
-	tmpl string `json:"-"`
-	val  string `json:"-"`
+	tmpl   *template.Template `json:"-"`
+	expect *regexp.Regexp     `json:"-"`
 }
 
-func NewCondition(condition v1alpha3.ConditionConfigT) ConditionT {
-	return ConditionT{
-		Name:      condition.Name,
-		Mandatory: condition.Mandatory,
+func NewCondition(condCfg v1alpha4.ConditionConfigT) (cond ConditionT, err error) {
+	cond = ConditionT{
+		Name:      condCfg.Name,
+		Mandatory: condCfg.Mandatory,
 
-		tmpl: condition.Template,
-		val:  condition.Value,
+		expect: regexp.MustCompile(condCfg.Expect),
 	}
+
+	cond.tmpl, err = tmpl.NewTemplate(condCfg.Name, condCfg.Template)
+	return cond, err
 }
 
 func (c *ConditionT) Eval(cfg map[string]any) (success bool, err error) {
 	var result string
-	result, err = template.EvaluateTemplate(c.tmpl, cfg)
+	result, err = c.evaluate(cfg)
 	if err != nil {
 		return success, err
 	}
 
-	success = result == c.val
+	success = c.expect.MatchString(result)
 
 	return success, err
+}
+
+func (c *ConditionT) evaluate(srcs map[string]any) (result string, err error) {
+	// Create a new buffer to store the templating result
+	buffer := new(bytes.Buffer)
+	err = c.tmpl.Execute(buffer, srcs)
+	if err != nil {
+		return result, err
+	}
+
+	return buffer.String(), nil
 }

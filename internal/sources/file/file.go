@@ -1,7 +1,7 @@
 package file
 
 import (
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/config"
 	"os"
 	"path/filepath"
@@ -14,7 +14,7 @@ type FileSourceT struct {
 	storConfig string
 }
 
-func NewFileSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *FileSourceT, err error) {
+func NewFileSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *FileSourceT, err error) {
 	s = &FileSourceT{
 		name:       srcConf.Name,
 		srcConfig:  srcConf.File,

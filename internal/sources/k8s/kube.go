@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/config"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +31,7 @@ type kubeT struct {
 	key       string
 }
 
-func NewK8sSource(srcConf v1alpha3.SourceConfigT, srcpath string) (s *K8sSourceT, err error) {
+func NewK8sSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *K8sSourceT, err error) {
 	s = &K8sSourceT{
 		name:       srcConf.Name,
 		srcConfig:  filepath.Join(srcpath, "sync", srcConf.K8s.Key),

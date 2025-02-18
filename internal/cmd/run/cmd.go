@@ -33,7 +33,7 @@ func NewCommand() *cobra.Command {
 // RunCommand TODO
 // Ref: https://pkg.go.dev/github.com/spf13/pflag#StringSlice
 func RunCommand(cmd *cobra.Command, args []string) {
-	configFilePath, err := cmd.Flags().GetString(configFlagName)
+	configFilepath, err := cmd.Flags().GetString(configFlagName)
 	if err != nil {
 		log.Fatalf("unable to get flag --config: %s", err.Error())
 	}
@@ -42,7 +42,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 	// EXECUTION FLOW RELATED
 	/////////////////////////////
 
-	c, err := combi.NewCombi(configFilePath)
+	c, err := combi.NewCombi(configFilepath)
 	if err != nil {
 		log.Fatalf("unable to init combi instance: %s", err.Error())
 	}

@@ -1,4 +1,4 @@
-package template
+package tmpl
 
 import (
 	"bytes"
@@ -17,28 +17,15 @@ import (
 // for people who are already comfortable with Helm. Not all the extra functionality was added to keep this simpler.
 // Ref: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
 
-func EvaluateTemplate(templateString string, data map[string]interface{}) (result string, err error) {
-	templateFunctionsMap := GetFunctionsMap()
-
+func NewTemplate(name, tmplStr string) (tmpl *template.Template, err error) {
+	extraFuncs := getExtraFuncMap()
 	// Create a Template object from the given string
-	parsedTemplate, err := template.New("main").Funcs(templateFunctionsMap).Parse(templateString)
-	if err != nil {
-		return result, err
-	}
-
-	// Create a new buffer to store the templating result
-	buffer := new(bytes.Buffer)
-
-	err = parsedTemplate.Execute(buffer, data)
-	if err != nil {
-		return result, err
-	}
-
-	return buffer.String(), nil
+	tmpl, err = template.New(name).Funcs(extraFuncs).Parse(tmplStr)
+	return tmpl, err
 }
 
 // GetFunctionsMap return a map with equivalency between functions for inside templating and real Golang ones
-func GetFunctionsMap() template.FuncMap {
+func getExtraFuncMap() template.FuncMap {
 	f := sprig.TxtFuncMap()
 
 	// Delete risky functions

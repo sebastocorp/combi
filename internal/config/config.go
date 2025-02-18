@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 
 	"gopkg.in/yaml.v3"
 )
@@ -27,17 +27,17 @@ const (
 )
 
 // ParseConfig TODO
-func ParseConfig(fileBytes []byte) (config v1alpha3.CombiConfigT, err error) {
-	fileBytes = ExpandEnv(fileBytes)
+func ParseConfig(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
+	cfgBytes = ExpandEnv(cfgBytes)
 
-	err = yaml.Unmarshal(fileBytes, &config)
+	err = yaml.Unmarshal(cfgBytes, &cfg)
 	if err != nil {
-		return config, err
+		return cfg, err
 	}
 
-	err = checkConfig(&config)
+	err = checkConfig(&cfg)
 
-	return config, err
+	return cfg, err
 }
 
 // expandEnv TODO
@@ -55,7 +55,7 @@ func ExpandEnv(input []byte) []byte {
 }
 
 // checkConfig TODO
-func checkConfig(config *v1alpha3.CombiConfigT) error {
+func checkConfig(cfg *v1alpha4.CombiConfigT) error {
 	spacesRegex := regexp.MustCompile(`\s`)
 
 	configKindValues := []string{
@@ -63,8 +63,36 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 		ConfigKindValueNGINX,
 		ConfigKindValueLIBCONFIG,
 	}
-	if !slices.Contains(configKindValues, config.Kind) {
+	if !slices.Contains(configKindValues, cfg.Kind) {
 		return fmt.Errorf("kind field must be one of this %v", configKindValues)
+	}
+
+	//------------------------------
+	// Settings
+	//------------------------------
+
+	if cfg.Settings.SyncTime < 2*time.Second {
+		return fmt.Errorf("settings.syncTime field must be at least 2 seconds")
+	}
+
+	if cfg.Settings.Target.Path == "" {
+		return fmt.Errorf("settings.target.path field must be set")
+	}
+
+	if cfg.Settings.Target.File == "" {
+		return fmt.Errorf("settings.target.file field must be set")
+	}
+
+	if cfg.Settings.Target.Mode == 0 {
+		cfg.Settings.Target.Mode = 0777
+	}
+
+	if cfg.Settings.TmpObjs.Path == "" {
+		cfg.Settings.TmpObjs.Path = "/tmp/combi"
+	}
+
+	if cfg.Settings.TmpObjs.Mode == 0 {
+		cfg.Settings.TmpObjs.Mode = 0777
 	}
 
 	//------------------------------
@@ -78,61 +106,37 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 		ConfigSourceTypeValueGIT,
 		ConfigSourceTypeValueK8S,
 	}
-	for _, sv := range config.Sources {
-		if !slices.Contains(srcTypeValues, sv.Type) {
-			return fmt.Errorf("source '%s' type field must be one of this %v", sv.Name, srcTypeValues)
+	for si := range cfg.Sources {
+		if !slices.Contains(srcTypeValues, cfg.Sources[si].Type) {
+			return fmt.Errorf("source '%s' type field must be one of this %v", cfg.Sources[si].Name, srcTypeValues)
 		}
 
-		if matched := spacesRegex.MatchString(sv.Name); matched {
-			return fmt.Errorf("source name '%s' contains spaces", sv.Name)
+		if matched := spacesRegex.MatchString(cfg.Sources[si].Name); matched {
+			return fmt.Errorf("source name '%s' contains spaces", cfg.Sources[si].Name)
 		}
 
-		if _, ok := namesCount[sv.Name]; ok {
-			return fmt.Errorf("source '%s' is duplicated", sv.Name)
+		if _, ok := namesCount[cfg.Sources[si].Name]; ok {
+			return fmt.Errorf("source '%s' is duplicated", cfg.Sources[si].Name)
 		}
-		namesCount[sv.Name] += 1
+		namesCount[cfg.Sources[si].Name] += 1
 	}
 
 	//------------------------------
 	// Behavior
 	//------------------------------
 
-	if config.Behavior.SyncTime < 2*time.Second {
-		return fmt.Errorf("behavior.syncTime field must be at least 2 seconds")
-	}
-
-	if config.Behavior.Target.Path == "" {
-		return fmt.Errorf("behavior.target.path field must be set")
-	}
-
-	if config.Behavior.Target.File == "" {
-		return fmt.Errorf("behavior.target.file field must be set")
-	}
-
-	if config.Behavior.Target.Mode == 0 {
-		config.Behavior.Target.Mode = 0777
-	}
-
-	if config.Behavior.TmpObjs.Path == "" {
-		config.Behavior.TmpObjs.Path = "/tmp/combi"
-	}
-
-	if config.Behavior.TmpObjs.Mode == 0 {
-		config.Behavior.TmpObjs.Mode = 0777
-	}
-
 	// conditions check
 
 	namesCount = map[string]int{}
-	for _, cv := range config.Behavior.Conditions {
-		if matched := spacesRegex.MatchString(cv.Name); matched {
-			return fmt.Errorf("condition name '%s' contains spaces", cv.Name)
+	for ci := range cfg.Behavior.Conditions {
+		if matched := spacesRegex.MatchString(cfg.Behavior.Conditions[ci].Name); matched {
+			return fmt.Errorf("condition name '%s' contains spaces", cfg.Behavior.Conditions[ci].Name)
 		}
 
-		if _, ok := namesCount[cv.Name]; ok {
-			return fmt.Errorf("source '%s' is duplicated", cv.Name)
+		if _, ok := namesCount[cfg.Behavior.Conditions[ci].Name]; ok {
+			return fmt.Errorf("source '%s' is duplicated", cfg.Behavior.Conditions[ci].Name)
 		}
-		namesCount[cv.Name] += 1
+		namesCount[cfg.Behavior.Conditions[ci].Name] += 1
 	}
 
 	// actions check
@@ -142,19 +146,19 @@ func checkConfig(config *v1alpha3.CombiConfigT) error {
 		ConfigOnValueSUCCESS,
 		ConfigOnValueFAILURE,
 	}
-	for _, av := range config.Behavior.Actions {
-		if matched := spacesRegex.MatchString(av.Name); matched {
-			return fmt.Errorf("action name '%s' contains spaces", av.Name)
+	for ai := range cfg.Behavior.Actions {
+		if matched := spacesRegex.MatchString(cfg.Behavior.Actions[ai].Name); matched {
+			return fmt.Errorf("action name '%s' contains spaces", cfg.Behavior.Actions[ai].Name)
 		}
 
-		if !slices.Contains(onValues, av.On) {
-			return fmt.Errorf("action '%s' on field must be one of this %v", av.Name, onValues)
+		if !slices.Contains(onValues, cfg.Behavior.Actions[ai].On) {
+			return fmt.Errorf("action '%s' on field must be one of this %v", cfg.Behavior.Actions[ai].Name, onValues)
 		}
 
-		if _, ok := namesCount[av.Name]; ok {
-			return fmt.Errorf("action '%s' is duplicated", av.Name)
+		if _, ok := namesCount[cfg.Behavior.Actions[ai].Name]; ok {
+			return fmt.Errorf("action '%s' is duplicated", cfg.Behavior.Actions[ai].Name)
 		}
-		namesCount[av.Name] += 1
+		namesCount[cfg.Behavior.Actions[ai].Name] += 1
 	}
 
 	return nil

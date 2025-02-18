@@ -1,7 +1,7 @@
 package combi
 
 import (
-	"combi/api/v1alpha3"
+	"combi/api/v1alpha4"
 	"combi/internal/encoding"
 	"combi/internal/logger"
 	"combi/internal/sources"
@@ -12,51 +12,55 @@ import (
 )
 
 // setup TODO
-func (c *CombiT) setup(conf *v1alpha3.CombiConfigT) error {
-	c.log = logger.NewLogger(logger.GetLevel(conf.Logger.Level))
-	c.syncTime = conf.Behavior.SyncTime
-	c.encoder = encoding.GetEncoder(conf.Kind)
+func (c *CombiT) setup(cfg *v1alpha4.CombiConfigT) error {
+	c.log = logger.NewLogger(logger.GetLevel(cfg.Settings.Logger.Level))
+	c.syncTime = cfg.Settings.SyncTime
+	c.encoder = encoding.GetEncoder(cfg.Kind)
 
 	// Target setup
 
-	err := os.MkdirAll(conf.Behavior.Target.Path, fs.FileMode(conf.Behavior.Target.Mode))
+	err := os.MkdirAll(cfg.Settings.Target.Path, fs.FileMode(cfg.Settings.Target.Mode))
 	if err != nil {
 		return err
 	}
 
-	c.target.filepath = filepath.Join(conf.Behavior.Target.Path, conf.Behavior.Target.File)
-	c.target.mode = fs.FileMode(conf.Behavior.Target.Mode)
+	c.target.filepath = filepath.Join(cfg.Settings.Target.Path, cfg.Settings.Target.File)
+	c.target.mode = fs.FileMode(cfg.Settings.Target.Mode)
 
 	// Sources setup
 
-	for _, sv := range conf.Sources {
+	for si := range cfg.Sources {
 		var hashKey string
-		hashKey, err = utils.GenHashString(sv.Type, sv.Name)
+		hashKey, err = utils.GenHashString(cfg.Sources[si].Type, cfg.Sources[si].Name)
 		if err != nil {
 			return err
 		}
 
-		srcpath := filepath.Join(conf.Behavior.TmpObjs.Path, hashKey)
-		err = os.MkdirAll(srcpath, fs.FileMode(conf.Behavior.TmpObjs.Mode))
+		srcpath := filepath.Join(cfg.Settings.TmpObjs.Path, hashKey)
+		err = os.MkdirAll(srcpath, fs.FileMode(cfg.Settings.TmpObjs.Mode))
 		if err != nil {
 			return err
 		}
 
 		var src sources.SourceT
-		src, err = sources.GetSource(sv, srcpath)
+		src, err = sources.GetSource(cfg.Sources[si], srcpath)
 		if err != nil {
 			return err
 		}
 		c.srcs = append(c.srcs, src)
 	}
 
-	for _, cv := range conf.Behavior.Conditions {
-		cond := NewCondition(cv)
+	for ci := range cfg.Behavior.Conditions {
+		var cond ConditionT
+		cond, err = NewCondition(cfg.Behavior.Conditions[ci])
+		if err != nil {
+			return err
+		}
 		c.conds = append(c.conds, cond)
 	}
 
-	for _, av := range conf.Behavior.Actions {
-		act := NewAction(av)
+	for ai := range cfg.Behavior.Actions {
+		act := NewAction(cfg.Behavior.Actions[ai])
 		c.acts = append(c.acts, act)
 	}
 
