@@ -35,6 +35,20 @@ func tokenize(cfgBytes []byte) (ts []TokenT, err error) {
 			continue
 		}
 
+		if cfgBytes[index] == '#' {
+			commBytes := cfgBytes[index:]
+			commBytesLen := len(commBytes)
+			offset := 0
+			for ; offset < commBytesLen; offset++ {
+				if commBytes[offset] == '\n' {
+					break
+				}
+			}
+
+			index += offset
+			continue
+		}
+
 		if isEqual(cfgBytes[index]) {
 			ts = append(ts, TokenT{
 				ttype: TOKEN_TYPE_EQUAL,
@@ -151,5 +165,5 @@ func isScope(b byte) bool {
 }
 
 func isSpecialToken(b byte) bool {
-	return slices.Contains([]byte{'[', ']', '(', ')', '{', '}', ';', ',', ':', '=', ' ', '\t', '\n'}, b)
+	return slices.Contains([]byte{'[', ']', '(', ')', '{', '}', ';', ',', ':', '=', ' ', '\t', '\n', '#'}, b)
 }
