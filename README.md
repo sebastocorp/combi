@@ -31,11 +31,9 @@ Thinking about these problems and possible solutions, we have decided to create 
 
 ## Flags
 
-| Name                  | Command  | Default                              | Description |
-|:---                   |:---      |:---                                  |:---         |
-| `log-level`           | `daemon` | `info`                               | Verbosity level for logs |
-| `tmp-dir`             | `daemon` | `/tmp/combi`                         | Temporary directoty to store temporary objects like remote repos, scripts, etc |
-| `sync-time`           | `daemon` | `15s`                                | Waiting time between source synchronizations (in duration type) |
+| Name     | Command | Default      | Description |
+|:---      |:---     |:---          |:---         |
+| `config` | `run`   | `combi.yaml` | Filepath where configuration in located. |
 
 ## How to use
 
@@ -43,74 +41,47 @@ This project provides the binary files and container image in differents archite
 
 ### Configuration
 
-Current configuration version: `v1alpha2`
+Current configuration version: `v1alpha4`
 
-#### Root Parameters
-
-| Name   | Default | Description |
-|:---    |:---     |:---         |
-| `kind` | `""`    | type of the configuration files to manage. The possible values ​​of this field can be found in the [supported configuration formats](#supported-configuration-formats) section |
-
-#### Global Parameters
-
-| Name                          | Default | Description |
-|:---                           |:---     |:---         |
-| `config.source`               | `""`    | source with the configuration to merge in the `mergedConfig` file |
-| `global.conditions.mandatory` | `[]`    | list of mandatory conditions that `mergedConfig` have to achive |
-| `global.conditions.optional`  | `[]`    | list of optional conditions that `mergedConfig` have to check |
-| `global.actions.onSuccess`    | `[]`    | list of actions that `combi` has to execute in case of mandatory conditions success |
-| `global.actions.onFailure`    | `[]`    | list of actions that `combi` has to execute in case of mandatory conditions fail |
-
-#### Configs Parameters
-
-| Name                                        | Default | Description |
-|:---                                         |:---     |:---         |
-| `config.mergedConfig`         | `""`    | filepath to create the configuration file after the merge and conditions |
-| `config.source`               | `""`    | source with the configuration to merge in the `mergedConfig` file |
-| `config.conditions.mandatory` | `[]`    | list of mandatory conditions that `mergedConfig` have to achive |
-| `config.conditions.optional`  | `[]`    | list of optional conditions that `mergedConfig` have to check |
-| `config.actions.onSuccess`    | `[]`    | list of actions that `combi` has to execute in case of mandatory conditions success |
-| `config.actions.onFailure`    | `[]`    | list of actions that `combi` has to execute in case of mandatory conditions fail |
-
-#### Condition List Item Parameters
-
-| Name       | Default | Description |
-|:---        |:---     |:---         |
-| `name`     | `""`    | name of the current condition to evaluate |
-| `template` | `""`    | golang template to compile and extract some config value to compare with condition `value` |
-| `value`    | `""`    | value to compare with the result of `template` |
-
-#### Action List Item Parameters
-
-| Name       | Default | Description |
-|:---        |:---     |:---         |
-| `name`     | `""`    | name of the current action to execute |
-| `command`  | `[]`    | string list with the command and his argument to execute |
-| `script`   | `""`    | string with a script that combi generate to execute |
+| Field | Description |
+|:--- |:--- |
+| `kind`                                 | Type of the main configuration, specified as a string. |
+| `settings.logger.level`                | Log level (e.g., "info", "debug", "error"). |
+| `settings.syncTime`                    | Sync time for the configuration, specified as `time.Duration`. |
+| `settings.tmpObjs.path`                | Path where temporary objects will be stored. |
+| `settings.tmpObjs.mode`                | Access mode for the temporary objects, specified as a `uint32`. |
+| `settings.target.path`                 | Path where final configuration file will be stored. |
+| `settings.target.file`                 | Name of the file at the target location. |
+| `settings.target.mode`                 | Access mode for the final configuration file, specified as a `uint32`. |
+| `sources`                              | List of data source configurations, which can be of type RAW, FILE, GIT, or K8S. |
+| `sources[].name`                       | Name of the data source or Kubernetes resource. |
+| `sources[].type`                       | Type of the source (values: "RAW", "FILE", "GIT" "K8S"). |
+| `sources[].raw`                        | Raw data for sources of type "RAW". |
+| `sources[].file`                       | Filepath for sources of type "FILE". |
+| `sources[].git.sshUrl`                 | SSH URL for the Git repository to clone. |
+| `sources[].git.sshKeyFilepath`         | Path to the SSH key file for authenticating with the Git repository. |
+| `sources[].git.branch`                 | Git branch to use. |
+| `sources[].git.filepath`               | Path to the file within the Git repository. |
+| `sources[].k8s.context.inCluster`      | Boolean indicating whether the Kubernetes configuration is within the cluster. |
+| `sources[].k8s.context.configFilepath` | Path to the Kubernetes configuration file. |
+| `sources[].k8s.context.masterUrl`      | URL of the Kubernetes master server. |
+| `sources[].k8s.kind`                   | Kind of the Kubernetes resource (values: "Secret", "ConfigMap"). |
+| `sources[].k8s.namespace`              | Kubernetes namespace where the resource is located. |
+| `sources[].k8s.name`                   | Kubernetes resource name. |
+| `sources[].k8s.key`                    | Key to identify the resource within Kubernetes. |
+| `behavior.conditions`                  | List of conditions to evaluate before taking actions. |
+| `behavior.conditions[].name`           | Name of the condition. |
+| `behavior.conditions[].mandatory`      | Indicates whether the condition is mandatory or optional. |
+| `behavior.conditions[].template`       | Template that defines how the condition should be evaluated. |
+| `behavior.conditions[].expect`         | Expected value for the condition to be considered true. |
+| `behavior.actions`                     | List of actions to perform when conditions are met. |
+| `behavior.actions[].name`              | Name of the action. |
+| `behavior.actions[].on`                | Event that triggers the action whn the conditions ends with fail or success  (values: "SUCCESS", "FAILURE"). |
+| `behavior.actions[].command`           | Command to execute as part of the action. |
 
 > **WARNING**
 >
 > The list of actions are commands that are executed on the machine after checking the conditions. Please be careful.
-
-### Sources
-
-You can consume the configuration from different sources.
-
-| Name    | Description |
-|:---     |:---         |
-| `config.source.type`                 | type of the source to define where consume the configuration (`raw`, `filepath`, `git` y `kubernetes`) |
-| `config.source.raw`                  | direct configuration string to merge |
-| `config.source.filepath`             | file with the configuration to merge |
-| `config.source.git`                  | git repository to find the file with the configuration to merge |
-| `config.source.git.sshUrl`           | ssh url of the git repository |
-| `config.source.git.sshKeyFilepath`   | ssh private key file to use in git clone |
-| `config.source.git.branch`           | branch of the git repository |
-| `config.source.git.filepath`         | filepath inside of repository of the config file |
-| `config.source.kubernetes`           | kubernetes resource `ConfigMap` or `Secret` with the configuration to merge |
-| `config.source.kubernetes.kind`      | kind of the resource (`ConfigMap` or `Secret`) |
-| `config.source.kubernetes.namespace` | namespace of the resource |
-| `config.source.kubernetes.name`      | name of the resource |
-| `config.source.kubernetes.key`       | key inside of the resource to find the configuration to merge |
 
 ## How does it work?
 
@@ -175,41 +146,41 @@ Synchronization flow diagram:
 To consume a configuration in a git repository (with specific branch) and merge in a local config with `libconfig` format:
 
 ```sh
-combi daemon \
-    --sync-time=20s \
-    --tmp-dir=/tmp/combi \
+combi run \
     --config=/config/combi.yaml
 ```
 
 The combi config.yaml:
 
 ```yaml
-# combi configuration file
-kind: libconfig
-global:
-  source:
-    type: raw
+kind: LIBCONFIG
+
+settings:
+  logger:
+    level: debug # info|warning|error|debug
+  syncTime: 5s
+  tmpObjs:
+    path: /tmp/combi
+    mode: 0777
+  target:
+    path: /etc/service/target
+    file: merged.cnf
+    mode: 0777
+
+sources:
+  - name: config1
+    type: RAW
     raw: |
       int32field=2
       int64field=500L
-
       string_example="some-value"
-
       group_example=
       {
         admin_credentials="root:pass"
         addr="0.0.0.0:6032"
       }
-  conditions:
-    mandatory: []
-    optional: []
-  actions:
-    onSuccess: []
-    onFailure: []
-configs:
-  mergedConfig: ./path/to/merged/libconfig.cnf
-  source:
-    type: raw
+  - name: config2
+    type: RAW
     raw: |
       mysql_variables=
       {
@@ -229,19 +200,22 @@ configs:
         { username = "reader" , password = "pass" , default_hostgroup = 1 , active = 1 },
       )
 
+behavior:
   conditions:
-    mandatory:
     - name: "search primitive value to check condition"
+      mandatory: true
       template: |
         {{- $config := . -}}
         {{- printf "%s" $config.int64field -}}
-      value: "500L"
+      expect: "500L"
     - name: "search group value to check condition"
+      mandatory: true
       template: |
         {{- $config := . -}}
         {{- printf "%s" $config.mysql_variables.threads -}}
-      value: "2"
+      expect: "2"
     - name: "search list value to check condition"
+      mandatory: true
       template: |
         {{- $config := . -}}
           {{- range $i, $v := $config.mysql_servers -}}
@@ -249,26 +223,26 @@ configs:
                 {{- printf "%s" $v.max_connections -}}
               {{- end -}}
           {{- end -}}
-      value: "1000"
+      expect: "1000"
     - name: "search env variable to check condition"
+      mandatory: false
       template: |
         {{- printf "%s" (env "MANDATORY_ENV_VAR") -}}
-      value: "true"
-    optional: []
+      expect: "true"
 
   actions:
-    onSuccess:
-    - name: "execute success message config action"
+    - name: "execute-success-message-config-action"
+      on: SUCCESS
       command:
       - echo
       - -e
-      - "success in config for you\n"
-    onFailure:
-    - name: "execute success message config action"
+      - "success in config for you"
+    - name: "execute-failure-message-config-action"
+      on: FAILURE
       command:
       - echo
       - -e
-      - "fail in config for you\n"
+      - "fail in config for you"
 ```
 
 ## Supported configuration formats

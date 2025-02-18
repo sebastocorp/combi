@@ -1,0 +1,47 @@
+kind: "" # JSON|NGINX|LIBCONFIG
+
+settings:
+  logger:
+    level: "" # info|warning|error|debug
+  syncTime: "" # duration type: 5s, 1h, etc.
+  tmpObjs:
+    path: ""
+    mode: 0
+  target:
+    path: ""
+    file: ""
+    mode: 0
+
+sources: []
+# sources:
+#   - name: ""
+#     type: "" # RAW|FILE|GIT|K8S
+#     raw: ""
+#     file: ""
+#     git:
+#       sshUrl: ""
+#       sshKeyFilepath: ""
+#       branch: ""
+#       filepath: ""
+#     k8s:
+#       context:
+#         inCluster: true
+#         configFilepath: ""
+#         masterUrl: ""
+#       kind: ""
+#       namespace: ""
+#       name: ""
+#       key: ""
+
+behavior:
+  conditions: []
+  # conditions:
+  #   - name: ""
+  #     mandatory: true
+  #     template: ""
+  #     expect: ""
+  actions: []
+  # actions:
+  #   - name: ""
+  #     on: "" # SUCCESS|FAILURE
+  #     command: []
