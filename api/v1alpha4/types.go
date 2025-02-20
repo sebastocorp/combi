@@ -86,7 +86,16 @@ type ConditionConfigT struct {
 }
 
 type ActionConfigT struct {
-	Name    string   `yaml:"name"`
-	On      string   `yaml:"on"`
-	Command []string `yaml:"command"`
+	Name    string           `yaml:"name"`
+	On      string           `yaml:"on"`
+	Command []string         `yaml:"command"`
+	K8s     ActionK8sConfigT `yaml:"k8s"`
+}
+
+type ActionK8sConfigT struct {
+	Context   SourceK8sContextConfigT `yaml:"context"`
+	Namespace string                  `yaml:"namespace"`
+	Pod       string                  `yaml:"pod"`
+	Container string                  `yaml:"container"`
+	Command   []string                `yaml:"command"`
 }

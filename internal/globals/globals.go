@@ -8,7 +8,8 @@ const (
 	LogKeyCondition       = "condition"
 	LogKeyConditionResult = "conditionResult"
 	LogKeyAction          = "action"
-	LogKeyActionOutput    = "actionOutput"
+	LogKeyActionStdout    = "actionStdout"
+	LogKeyActionStderr    = "actionStderr"
 	LogKeyError           = "error"
 
 	LogValueService                = "combi"

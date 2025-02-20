@@ -60,7 +60,12 @@ func (c *CombiT) setup(cfg *v1alpha4.CombiConfigT) error {
 	}
 
 	for ai := range cfg.Behavior.Actions {
-		act := NewAction(cfg.Behavior.Actions[ai])
+		var act ActionT
+		act, err = NewAction(cfg.Behavior.Actions[ai])
+		if err != nil {
+			return err
+		}
+
 		c.acts = append(c.acts, act)
 	}
 

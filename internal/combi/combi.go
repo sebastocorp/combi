@@ -175,16 +175,18 @@ func (c *CombiT) Run() {
 			extraLogFields.Set(globals.LogKeyAction, av)
 
 			if av.On == condsResult {
-				var out []byte
-				out, err = av.Exec()
+				var outBytes, errBytes []byte
+				outBytes, errBytes, err = av.Exec()
 				if err != nil {
 					extraLogFields.Set(globals.LogKeyError, err.Error())
 					c.log.Error("unable to execute action", extraLogFields)
 					break
 				}
-				extraLogFields.Set(globals.LogKeyActionOutput, string(out))
+				extraLogFields.Set(globals.LogKeyActionStdout, string(outBytes))
+				extraLogFields.Set(globals.LogKeyActionStderr, string(errBytes))
 				c.log.Debug("action executed", extraLogFields)
-				extraLogFields.Del(globals.LogKeyActionOutput)
+				extraLogFields.Del(globals.LogKeyActionStdout)
+				extraLogFields.Del(globals.LogKeyActionStderr)
 			}
 		}
 		if err != nil {

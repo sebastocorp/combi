@@ -3,16 +3,17 @@
 
 ## Features
 
+- [ ] Add k8s command exec system
 - [ ] Add patch system post merge
 - [x] Consume combi config from k8s ConfigMap/Secrets
 
 ## Supports
 
-- [x] Add support to nginx conf files with custom parser
+- [ ] Add support to nginx conf files with custom parser
 - [x] Add support to libconfig conf files with custom parser
 - [ ] Add support to hcl files
 - [x] Add support to json files with golang parser
-- [ ] Add support to yaml files with golang parser
+- [x] Add support to yaml files with golang parser
 
 ## Code
 
