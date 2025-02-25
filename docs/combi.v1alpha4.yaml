@@ -45,3 +45,12 @@ behavior:
   #   - name: ""
   #     on: "" # SUCCESS|FAILURE
   #     command: []
+  #     k8s:
+  #       context:
+  #         inCluster: true
+  #         configFilepath: ""
+  #         masterUrl: ""
+  #       namespace: ""
+  #       pod: ""
+  #       container: ""
+  #       command: []
