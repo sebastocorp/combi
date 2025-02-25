@@ -4,6 +4,7 @@ import (
 	"combi/internal/config"
 	"combi/internal/encoding/json"
 	"combi/internal/encoding/libconfig"
+	"combi/internal/encoding/nginx"
 	"combi/internal/encoding/yaml"
 )
 
@@ -21,7 +22,7 @@ func GetEncoder(encType string) EncoderT {
 		config.ConfigKindValueJSON:      &json.JsonT{},
 		config.ConfigKindValueYAML:      &yaml.YamlT{},
 		config.ConfigKindValueLIBCONFIG: &libconfig.LibconfigT{},
-		// config.ConfigKindValueNGINX:     &nginx.NginxT{},
+		config.ConfigKindValueNGINX:     &nginx.NginxT{},
 	}
 	return encoders[encType]
 }

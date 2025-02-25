@@ -61,6 +61,12 @@ docker-kind-build:
 	docker build --tag '$(BINARY):test' .
 	kind load docker-image $(BINARY):test
 
+container-build:
+	$(CONTAINER_TOOL) build --no-cache --tag ${IMG} -f Dockerfile .
+
+container-push: container-build
+	$(CONTAINER_TOOL) push ${IMG}
+
 .PHONY: build
 build: fmt vet ## Build manager binary.
 	go build -o bin/combi cmd/combi/main.go
