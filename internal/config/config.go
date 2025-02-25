@@ -41,7 +41,7 @@ func ParseConfig(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
 	return cfg, err
 }
 
-// expandEnv TODO
+// ExpandEnv TODO
 func ExpandEnv(input []byte) []byte {
 	re := regexp.MustCompile(`\${ENV:([A-Za-z_][A-Za-z0-9_]*)}\$`)
 	result := re.ReplaceAllFunc(input, func(match []byte) []byte {

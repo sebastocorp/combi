@@ -110,6 +110,7 @@ func (c *CombiT) Run() {
 				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
+			cfgBytes = config.ExpandEnv(cfgBytes)
 
 			var cfg map[string]any
 			cfg, err = c.encoder.DecodeConfig(cfgBytes)
