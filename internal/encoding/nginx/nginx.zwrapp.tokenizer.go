@@ -76,15 +76,15 @@ func isSpecialToken(b byte) bool {
 	return slices.Contains([]byte{' ', '\t', '\n', ';', '{', '}', '#'}, b)
 }
 
-func getTokenTypeString(tt TokenTypeT) string {
-	return [...]string{
-		"TOKEN_TYPE_DEFAULT",
-		"TOKEN_TYPE_ITEM",
-		"TOKEN_TYPE_SEPARATOR",
-		"TOKEN_TYPE_BLOCK_OPEN",
-		"TOKEN_TYPE_BLOCK_CLOSE",
-	}[tt]
-}
+// func getTokenTypeString(tt TokenTypeT) string {
+// 	return [...]string{
+// 		"TOKEN_TYPE_DEFAULT",
+// 		"TOKEN_TYPE_ITEM",
+// 		"TOKEN_TYPE_SEPARATOR",
+// 		"TOKEN_TYPE_BLOCK_OPEN",
+// 		"TOKEN_TYPE_BLOCK_CLOSE",
+// 	}[tt]
+// }
 
 func getScopeToken(b byte) (t TokenT) {
 	t.value = string([]byte{b})

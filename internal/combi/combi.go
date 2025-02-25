@@ -85,6 +85,7 @@ func (c *CombiT) Run() {
 			if !os.IsNotExist(err) {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to check target file", extraLogFields)
+				extraLogFields.Del(globals.LogKeyError)
 				continue
 			}
 			tFileExist = false
@@ -97,6 +98,7 @@ func (c *CombiT) Run() {
 
 		// decode and merge sources
 		cfgResult := map[string]any{}
+		cfgSrcBytes := []byte{}
 		for _, sv := range c.srcs {
 			extraLogFields.Set(globals.LogKeySourceName, sv.GetName())
 
@@ -105,6 +107,7 @@ func (c *CombiT) Run() {
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to get source", extraLogFields)
+				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
 
@@ -113,10 +116,15 @@ func (c *CombiT) Run() {
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to decode source", extraLogFields)
+				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
 
 			c.encoder.MergeConfigs(cfgResult, cfg)
+
+			if len(c.srcs) == 1 {
+				cfgSrcBytes = cfgBytes
+			}
 		}
 		if err != nil {
 			continue
@@ -134,6 +142,7 @@ func (c *CombiT) Run() {
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to evaluate condition", extraLogFields)
+				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
 
@@ -155,17 +164,23 @@ func (c *CombiT) Run() {
 		// config encode and create target file
 		if condsResult == config.ConfigOnValueSUCCESS {
 			var cfgResultBytes []byte
-			cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
-			if err != nil {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("unable to generate config", extraLogFields)
-				continue
+			if len(c.srcs) != 1 {
+				cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
+				if err != nil {
+					extraLogFields.Set(globals.LogKeyError, err.Error())
+					c.log.Error("unable to generate config", extraLogFields)
+					extraLogFields.Del(globals.LogKeyError)
+					continue
+				}
+			} else {
+				cfgResultBytes = cfgSrcBytes
 			}
 
 			err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to create target file", extraLogFields)
+				extraLogFields.Del(globals.LogKeyError)
 				continue
 			}
 		}

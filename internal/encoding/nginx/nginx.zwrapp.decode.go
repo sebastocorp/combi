@@ -2,12 +2,14 @@ package nginx
 
 import "fmt"
 
+const (
+	nginxBlockPatternKey = "nginxBlockPattern"
+)
+
 func decodeConfigTokens(ts []TokenT, cfg map[string]any) (err error) {
 	tsLen := len(ts)
 	for ti := 0; ti < tsLen; ti++ {
 		if ts[ti].ttype == TOKEN_TYPE_ITEM {
-			cfg[ts[ti].value] = nil
-
 			var value string
 			var tt TokenTypeT
 			var offset int
@@ -15,12 +17,62 @@ func decodeConfigTokens(ts []TokenT, cfg map[string]any) (err error) {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("--------------------------------------------------\n")
-			fmt.Printf("type: %-24s; len: %-5d; item: %-10s\n", getTokenTypeString(ts[ti].ttype), len(ts[ti].value), ts[ti].value)
-			fmt.Printf("type: %-24s; len: %-5d; item: %s\n", getTokenTypeString(tt), len(value), value)
-			fmt.Printf("type: %-24s; len: %-5d; item: %-10s\n", getTokenTypeString(ts[ti+offset].ttype), len(ts[ti+offset].value), ts[ti+offset].value)
-			fmt.Printf("--------------------------------------------------\n")
-			ti += offset
+
+			var scopeOffset int
+			if tt == TOKEN_TYPE_BLOCK_OPEN {
+				scopeOffset, err = getScopeOffset(ts[ti+offset:], tt)
+				if err != nil {
+					return err
+				}
+
+				if _, ok := cfg[ts[ti].value]; ok {
+					new := make(map[string]any)
+					new[nginxBlockPatternKey] = value
+					err = decodeConfigTokens(ts[ti+offset+1:ti+offset+scopeOffset], new)
+					if err != nil {
+						return err
+					}
+
+					switch cfg[ts[ti].value].(type) {
+					case []any:
+						{
+							cfg[ts[ti].value] = append(cfg[ts[ti].value].([]any), new)
+						}
+					case map[string]any:
+						{
+							old := cfg[ts[ti].value]
+							cfg[ts[ti].value] = []any{old, new}
+						}
+					}
+				} else {
+					cfg[ts[ti].value] = make(map[string]any)
+					cfg[ts[ti].value].(map[string]any)[nginxBlockPatternKey] = value
+					err = decodeConfigTokens(ts[ti+offset+1:ti+offset+scopeOffset], cfg[ts[ti].value].(map[string]any))
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			if tt == TOKEN_TYPE_SEPARATOR {
+				if _, ok := cfg[ts[ti].value]; ok {
+					switch cfg[ts[ti].value].(type) {
+					case []any:
+						{
+							cfg[ts[ti].value] = append(cfg[ts[ti].value].([]any), value)
+						}
+					case string:
+						{
+							old := cfg[ts[ti].value]
+							cfg[ts[ti].value] = []any{old, value}
+						}
+					}
+				} else {
+					cfg[ts[ti].value] = value
+				}
+			}
+
+			ti += offset + scopeOffset
 		}
 	}
 
@@ -41,12 +93,12 @@ func getOffsetUntilNextSpecialToken(ts []TokenT) (value string, tt TokenTypeT, o
 		}
 	}
 
-	if tt == TOKEN_TYPE_DEFAULT {
-		err = fmt.Errorf("malformed configuration, unable to now next special token")
-	}
-
 	if len(value) > 0 {
 		value = value[:len(value)-1]
+	}
+
+	if tt == TOKEN_TYPE_DEFAULT {
+		err = fmt.Errorf("malformed configuration, unable to now next special token")
 	}
 
 	return value, tt, offset, err
