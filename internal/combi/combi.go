@@ -138,21 +138,17 @@ func (c *CombiT) Run() {
 			extraLogFields.Del(globals.LogKeyConditionResult)
 			extraLogFields.Set(globals.LogKeyCondition, cv)
 
-			var succ bool
-			succ, err = cv.Eval(cfgResult)
+			var cr ConditionResultT
+			cr, err = cv.Eval(cfgResult)
+			extraLogFields.Set(globals.LogKeyConditionResult, cr)
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to evaluate condition", extraLogFields)
 				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
-
-			extraLogFields.Set(globals.LogKeyConditionResult, globals.LogValueConditionResultSUCCESS)
-			if !succ {
-				extraLogFields.Set(globals.LogKeyConditionResult, globals.LogValueConditionResultFAIL)
-				if cv.Mandatory {
-					condsResult = config.ConfigOnValueFAILURE
-				}
+			if cr.Status == ConditionStatusFail && cv.Mandatory {
+				condsResult = config.ConfigOnValueFAILURE
 			}
 			c.log.Debug("condition evaluated", extraLogFields)
 		}
@@ -191,18 +187,16 @@ func (c *CombiT) Run() {
 			extraLogFields.Set(globals.LogKeyAction, av)
 
 			if av.On == condsResult {
-				var outBytes, errBytes []byte
-				outBytes, errBytes, err = av.Exec()
+				var actResult ActionResultT
+				actResult, err = av.Exec()
+				extraLogFields.Set(globals.LogKeyActionResult, actResult)
 				if err != nil {
 					extraLogFields.Set(globals.LogKeyError, err.Error())
 					c.log.Error("unable to execute action", extraLogFields)
 					break
 				}
-				extraLogFields.Set(globals.LogKeyActionStdout, string(outBytes))
-				extraLogFields.Set(globals.LogKeyActionStderr, string(errBytes))
 				c.log.Debug("action executed", extraLogFields)
-				extraLogFields.Del(globals.LogKeyActionStdout)
-				extraLogFields.Del(globals.LogKeyActionStderr)
+				extraLogFields.Del(globals.LogKeyActionResult)
 			}
 		}
 		if err != nil {

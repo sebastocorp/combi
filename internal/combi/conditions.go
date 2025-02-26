@@ -8,12 +8,23 @@ import (
 	"text/template"
 )
 
+const (
+	ConditionStatusSuccess = "success"
+	ConditionStatusFail    = "fail"
+)
+
 type ConditionT struct {
 	Name      string `json:"name"`
 	Mandatory bool   `json:"mandatory"`
 
 	tmpl   *template.Template `json:"-"`
 	expect *regexp.Regexp     `json:"-"`
+}
+
+type ConditionResultT struct {
+	Status     string `json:"status"`
+	TmplResult string `json:"tmplResult"`
+	Expect     string `json:"expect"`
 }
 
 func NewCondition(condCfg v1alpha4.ConditionConfigT) (cond ConditionT, err error) {
@@ -28,16 +39,19 @@ func NewCondition(condCfg v1alpha4.ConditionConfigT) (cond ConditionT, err error
 	return cond, err
 }
 
-func (c *ConditionT) Eval(cfg map[string]any) (success bool, err error) {
-	var result string
-	result, err = c.evaluate(cfg)
+func (c *ConditionT) Eval(cfg map[string]any) (result ConditionResultT, err error) {
+	result.Status = ConditionStatusFail
+	result.Expect = c.expect.String()
+	result.TmplResult, err = c.evaluate(cfg)
 	if err != nil {
-		return success, err
+		return result, err
 	}
 
-	success = c.expect.MatchString(result)
+	if c.expect.MatchString(result.TmplResult) {
+		result.Status = ConditionStatusSuccess
+	}
 
-	return success, err
+	return result, err
 }
 
 func (c *ConditionT) evaluate(srcs map[string]any) (result string, err error) {

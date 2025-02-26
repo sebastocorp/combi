@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
+	"strings"
 
 	"combi/api/v1alpha4"
 	"combi/internal/utils"
@@ -34,6 +35,12 @@ type ActionK8sT struct {
 	cmd []string
 }
 
+type ActionResultT struct {
+	Cmd    string `json:"cmd"`
+	Stdout string `json:"stdout"`
+	Stderr string `json:"stderr"`
+}
+
 func NewAction(action v1alpha4.ActionConfigT) (a ActionT, err error) {
 	a = ActionT{
 		Name: action.Name,
@@ -58,8 +65,9 @@ func NewAction(action v1alpha4.ActionConfigT) (a ActionT, err error) {
 	return a, err
 }
 
-func (a *ActionT) Exec() (stdoutBytes []byte, stderrBytes []byte, err error) {
+func (a *ActionT) Exec() (result ActionResultT, err error) {
 	if len(a.cmd) > 0 {
+		result.Cmd = strings.Join(a.cmd, " ")
 		var stdout, stderr bytes.Buffer
 		cmd := exec.Command(a.cmd[0], a.cmd[1:]...)
 		cmd.Stdout = &stdout
@@ -67,21 +75,22 @@ func (a *ActionT) Exec() (stdoutBytes []byte, stderrBytes []byte, err error) {
 
 		err = cmd.Run()
 		if err != nil {
-			return stdoutBytes, stderrBytes, err
+			return result, err
 		}
 
-		stdoutBytes = stdout.Bytes()
-		stderrBytes = stderr.Bytes()
+		result.Stdout = stdout.String()
+		result.Stderr = stderr.String()
 	}
 
 	if len(a.k8s.cmd) > 0 {
-		stdoutBytes, stderrBytes, err = a.execK8sCommand()
+		result.Cmd = strings.Join(a.k8s.cmd, " ")
+		result.Stdout, result.Stderr, err = a.execK8sCommand()
 	}
 
-	return stdoutBytes, stderrBytes, err
+	return result, err
 }
 
-func (a *ActionT) execK8sCommand() (stdoutBytes []byte, stderrBytes []byte, err error) {
+func (a *ActionT) execK8sCommand() (stdoutStr, stderrStr string, err error) {
 	req := a.k8s.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(a.k8s.pod).
@@ -90,7 +99,7 @@ func (a *ActionT) execK8sCommand() (stdoutBytes []byte, stderrBytes []byte, err 
 
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return stdoutBytes, stderrBytes, err
+		return stdoutStr, stderrStr, err
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
@@ -105,7 +114,7 @@ func (a *ActionT) execK8sCommand() (stdoutBytes []byte, stderrBytes []byte, err 
 
 	exec, err := remotecommand.NewSPDYExecutor(a.k8s.cfg, "POST", req.URL())
 	if err != nil {
-		return stdoutBytes, stderrBytes, err
+		return stdoutStr, stderrStr, err
 	}
 
 	var stdout, stderr bytes.Buffer
@@ -115,11 +124,8 @@ func (a *ActionT) execK8sCommand() (stdoutBytes []byte, stderrBytes []byte, err 
 		Stderr: &stderr,
 		Tty:    false,
 	})
-	if err != nil {
-		return stdoutBytes, stderrBytes, err
-	}
-	stdoutBytes = stdout.Bytes()
-	stderrBytes = stderr.Bytes()
+	stdoutStr = stdout.String()
+	stderrStr = stderr.String()
 
-	return stdoutBytes, stderrBytes, err
+	return stdoutStr, stderrStr, err
 }

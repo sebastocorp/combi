@@ -8,14 +8,11 @@ const (
 	LogKeyCondition       = "condition"
 	LogKeyConditionResult = "conditionResult"
 	LogKeyAction          = "action"
-	LogKeyActionStdout    = "actionStdout"
-	LogKeyActionStderr    = "actionStderr"
+	LogKeyActionResult    = "actionResult"
 	LogKeyError           = "error"
 
-	LogValueService                = "combi"
-	LogValueDefaultStr             = "none"
-	LogValueConditionResultFAIL    = "FAIL"
-	LogValueConditionResultSUCCESS = "SUCCESS"
+	LogValueService    = "combi"
+	LogValueDefaultStr = "none"
 )
 
 func GetLogCommonFields() map[string]any {
