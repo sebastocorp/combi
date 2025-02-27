@@ -6,7 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"combi/internal/config"
+	"combi/internal/combi/actionset"
+	"combi/internal/combi/conditionset"
 	"combi/internal/encoding"
 	"combi/internal/globals"
 	"combi/internal/logger"
@@ -20,8 +21,8 @@ type CombiT struct {
 	target   TargetT
 	encoder  encoding.EncoderT
 	srcs     []sources.SourceT
-	conds    []ConditionT
-	acts     []ActionT
+	cs       *conditionset.ConditionSetT
+	as       *actionset.ActionSetT
 }
 
 type TargetT struct {
@@ -35,13 +36,13 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 		return c, err
 	}
 
-	conf, err := config.ParseConfig(cfgBytes)
+	conf, err := parseConfig(cfgBytes)
 	if err != nil {
 		return c, err
 	}
 
 	c = &CombiT{}
-	err = c.setup(&conf)
+	err = c.setup(conf)
 	if err != nil {
 		return c, err
 	}
@@ -110,7 +111,6 @@ func (c *CombiT) Run() {
 				extraLogFields.Del(globals.LogKeyError)
 				break
 			}
-			cfgBytes = config.ExpandEnv(cfgBytes)
 
 			var cfg map[string]any
 			cfg, err = c.encoder.DecodeConfig(cfgBytes)
@@ -133,33 +133,22 @@ func (c *CombiT) Run() {
 		extraLogFields.Del(globals.LogKeySourceName)
 
 		// check config conditions
-		condsResult := config.ConfigOnValueSUCCESS
-		for _, cv := range c.conds {
-			extraLogFields.Del(globals.LogKeyConditionResult)
-			extraLogFields.Set(globals.LogKeyCondition, cv)
-
-			var cr ConditionResultT
-			cr, err = cv.Eval(cfgResult)
-			extraLogFields.Set(globals.LogKeyConditionResult, cr)
-			if err != nil {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("unable to evaluate condition", extraLogFields)
-				extraLogFields.Del(globals.LogKeyError)
-				break
-			}
-			if cr.Status == ConditionStatusFail && cv.Mandatory {
-				condsResult = config.ConfigOnValueFAILURE
-			}
-			c.log.Debug("condition evaluated", extraLogFields)
-		}
+		c.log.Debug("evaluate condition set", extraLogFields)
+		var csr conditionset.ResultT
+		csr, err = c.cs.Evaluate(cfgResult)
+		extraLogFields.Set(globals.LogKeyConditionSet, csr)
 		if err != nil {
+			extraLogFields.Set(globals.LogKeyError, err.Error())
+			c.log.Error("unable to evaluate condition set", extraLogFields)
+			extraLogFields.Del(globals.LogKeyError)
+			extraLogFields.Del(globals.LogKeyConditionSet)
 			continue
 		}
-		extraLogFields.Del(globals.LogKeyCondition)
-		extraLogFields.Del(globals.LogKeyConditionResult)
+		c.log.Debug("condition set evaluated", extraLogFields)
+		extraLogFields.Del(globals.LogKeyConditionSet)
 
 		// config encode and create target file
-		if condsResult == config.ConfigOnValueSUCCESS {
+		if csr.Status == conditionset.StatusSuccess {
 			var cfgResultBytes []byte
 			if len(c.srcs) != 1 {
 				cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
@@ -183,26 +172,19 @@ func (c *CombiT) Run() {
 		}
 
 		// execute actions
-		for _, av := range c.acts {
-			extraLogFields.Set(globals.LogKeyAction, av)
-
-			if av.On == condsResult {
-				var actResult ActionResultT
-				actResult, err = av.Exec()
-				extraLogFields.Set(globals.LogKeyActionResult, actResult)
-				if err != nil {
-					extraLogFields.Set(globals.LogKeyError, err.Error())
-					c.log.Error("unable to execute action", extraLogFields)
-					break
-				}
-				c.log.Debug("action executed", extraLogFields)
-				extraLogFields.Del(globals.LogKeyActionResult)
-			}
-		}
+		c.log.Debug("executing action set", extraLogFields)
+		var asr actionset.ResultT
+		asr, err = c.as.Execute(csr.Status)
+		extraLogFields.Set(globals.LogKeyActionSet, asr)
 		if err != nil {
+			extraLogFields.Set(globals.LogKeyError, err.Error())
+			c.log.Error("unable to execute action set", extraLogFields)
+			extraLogFields.Del(globals.LogKeyError)
+			extraLogFields.Del(globals.LogKeyActionSet)
 			continue
 		}
-		extraLogFields.Del(globals.LogKeyAction)
+		c.log.Debug("action set executed", extraLogFields)
+		extraLogFields.Del(globals.LogKeyActionSet)
 
 		c.log.Info("success in config sync", extraLogFields)
 	}

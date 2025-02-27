@@ -6,8 +6,10 @@ const (
 	LogKeyService         = "service"
 	LogKeySourceName      = "sourceName"
 	LogKeyCondition       = "condition"
+	LogKeyConditionSet    = "conditionSet"
 	LogKeyConditionResult = "conditionResult"
 	LogKeyAction          = "action"
+	LogKeyActionSet       = "actionSet"
 	LogKeyActionResult    = "actionResult"
 	LogKeyError           = "error"
 

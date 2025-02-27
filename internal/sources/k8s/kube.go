@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"combi/api/v1alpha4"
-	"combi/internal/config"
+	"combi/internal/utils"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -116,7 +116,7 @@ func (s *K8sSourceT) GetConfig() (conf []byte, err error) {
 		return conf, err
 	}
 
-	conf = config.ExpandEnv(conf)
+	conf = utils.ExpandEnv(conf)
 
 	return conf, err
 }

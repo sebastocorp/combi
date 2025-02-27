@@ -1,0 +1,111 @@
+package combi
+
+import (
+	"combi/api/v1alpha4"
+	"combi/internal/combi/actionset"
+	"combi/internal/combi/conditionset"
+	"combi/internal/encoding"
+	"combi/internal/logger"
+	"combi/internal/sources"
+	"combi/internal/utils"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+)
+
+// setup TODO
+func (c *CombiT) setup(cfg any) (err error) {
+	switch cfg := cfg.(type) {
+	case v1alpha4.CombiConfigT:
+		{
+			err = c.v1alpha4Setup(cfg)
+		}
+	default:
+		{
+			err = fmt.Errorf("unsupported apiVersion")
+		}
+	}
+	return err
+}
+
+// v1alpha4Setup TODO
+func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
+	c.log = logger.NewLogger(logger.GetLevel(cfg.Settings.Logger.Level))
+	c.syncTime = cfg.Settings.SyncTime
+	c.encoder = encoding.GetEncoder(cfg.Kind)
+
+	// Target setup
+
+	err := os.MkdirAll(cfg.Settings.Target.Path, fs.FileMode(cfg.Settings.Target.Mode))
+	if err != nil {
+		return err
+	}
+
+	c.target.filepath = filepath.Join(cfg.Settings.Target.Path, cfg.Settings.Target.File)
+	c.target.mode = fs.FileMode(cfg.Settings.Target.Mode)
+
+	// Sources setup
+
+	for si := range cfg.Sources {
+		var hashKey string
+		hashKey, err = utils.GenHashString(cfg.Sources[si].Type, cfg.Sources[si].Name)
+		if err != nil {
+			return err
+		}
+
+		srcpath := filepath.Join(cfg.Settings.TmpObjs.Path, hashKey)
+		err = os.MkdirAll(srcpath, fs.FileMode(cfg.Settings.TmpObjs.Mode))
+		if err != nil {
+			return err
+		}
+
+		var src sources.SourceT
+		src, err = sources.GetSource(cfg.Sources[si], srcpath)
+		if err != nil {
+			return err
+		}
+		c.srcs = append(c.srcs, src)
+	}
+
+	c.cs, err = conditionset.NewConditionSet()
+	if err != nil {
+		return err
+	}
+	for ci := range cfg.Behavior.Conditions {
+		err = c.cs.CreateAdd(conditionset.OptionsT{
+			Name:      cfg.Behavior.Conditions[ci].Name,
+			Mandatory: cfg.Behavior.Conditions[ci].Mandatory,
+			Tmpl:      cfg.Behavior.Conditions[ci].Template,
+			Expect:    cfg.Behavior.Conditions[ci].Expect,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	c.as, err = actionset.NewActionSet()
+	if err != nil {
+		return err
+	}
+	for ai := range cfg.Behavior.Actions {
+		err = c.as.CreateAdd(actionset.OptionsT{
+			Name: cfg.Behavior.Actions[ai].Name,
+			On:   cfg.Behavior.Actions[ai].On,
+			Cmd:  cfg.Behavior.Actions[ai].Cmd,
+			K8s: actionset.OptionsK8sT{
+				Namespace:      cfg.Behavior.Actions[ai].K8s.Namespace,
+				Pod:            cfg.Behavior.Actions[ai].K8s.Pod,
+				Container:      cfg.Behavior.Actions[ai].K8s.Container,
+				InCluster:      cfg.Behavior.Actions[ai].K8s.Context.InCluster,
+				ConfigFilepath: cfg.Behavior.Actions[ai].K8s.Context.ConfigFilepath,
+				MasterUrl:      cfg.Behavior.Actions[ai].K8s.Context.MasterUrl,
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

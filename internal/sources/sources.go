@@ -2,11 +2,17 @@ package sources
 
 import (
 	"combi/api/v1alpha4"
-	"combi/internal/config"
 	"combi/internal/sources/file"
 	"combi/internal/sources/git"
 	"combi/internal/sources/k8s"
 	"combi/internal/sources/raw"
+)
+
+const (
+	TypeRAW  = "RAW"
+	TypeFILE = "FILE"
+	TypeGIT  = "GIT"
+	TypeK8S  = "K8S"
 )
 
 type SourceT interface {
@@ -17,19 +23,19 @@ type SourceT interface {
 
 func GetSource(srcCfg v1alpha4.SourceConfigT, srcpath string) (SourceT, error) {
 	switch srcCfg.Type {
-	case config.ConfigSourceTypeValueRAW:
+	case TypeRAW:
 		{
 			return raw.NewRawSource(srcCfg, srcpath)
 		}
-	case config.ConfigSourceTypeValueFILE:
+	case TypeFILE:
 		{
 			return file.NewFileSource(srcCfg, srcpath)
 		}
-	case config.ConfigSourceTypeValueGIT:
+	case TypeGIT:
 		{
 			return git.NewGitSource(srcCfg, srcpath)
 		}
-	case config.ConfigSourceTypeValueK8S:
+	case TypeK8S:
 		{
 			return k8s.NewK8sSource(srcCfg, srcpath)
 		}

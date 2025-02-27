@@ -1,68 +1,67 @@
-package config
+package combi
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
 	"time"
 
 	"combi/api/v1alpha4"
+	"combi/internal/combi/conditionset"
+	"combi/internal/encoding"
+	"combi/internal/sources"
+	"combi/internal/utils"
 
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	ConfigKindValueJSON      = "JSON"
-	ConfigKindValueYAML      = "YAML"
-	ConfigKindValueNGINX     = "NGINX"
-	ConfigKindValueLIBCONFIG = "LIBCONFIG"
+type ApiVersionConfigT struct {
+	ApiVersion string `yaml:"apiVersion"`
+}
 
-	ConfigOnValueSUCCESS = "SUCCESS"
-	ConfigOnValueFAILURE = "FAILURE"
+// parseConfig TODO
+func parseConfig(cfgBytes []byte) (cfg any, err error) {
+	cfgBytes = utils.ExpandEnv(cfgBytes)
 
-	ConfigSourceTypeValueRAW  = "RAW"
-	ConfigSourceTypeValueFILE = "FILE"
-	ConfigSourceTypeValueGIT  = "GIT"
-	ConfigSourceTypeValueK8S  = "K8S"
-)
+	avc := ApiVersionConfigT{}
+	err = yaml.Unmarshal(cfgBytes, &avc)
+	if err != nil {
+		return cfg, err
+	}
 
-// ParseConfig TODO
-func ParseConfig(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
-	cfgBytes = ExpandEnv(cfgBytes)
+	switch avc.ApiVersion {
+	case "v1alpha4":
+		{
+			cfg, err = v1alpha4Parse(cfgBytes)
+		}
+	default:
+		{
+			return cfg, fmt.Errorf("unsupported apiVersion '%s'", avc.ApiVersion)
+		}
+	}
 
+	return cfg, err
+}
+
+func v1alpha4Parse(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
 	err = yaml.Unmarshal(cfgBytes, &cfg)
 	if err != nil {
 		return cfg, err
 	}
 
-	err = checkConfig(&cfg)
-
+	err = v1alpha4Check(&cfg)
 	return cfg, err
 }
 
-// ExpandEnv TODO
-func ExpandEnv(input []byte) []byte {
-	re := regexp.MustCompile(`\${ENV:([A-Za-z_][A-Za-z0-9_]*)}\$`)
-	result := re.ReplaceAllFunc(input, func(match []byte) []byte {
-		key := re.FindSubmatch(match)[1]
-		if value, exists := os.LookupEnv(string(key)); exists {
-			return []byte(value)
-		}
-		return match
-	})
-
-	return result
-}
-
 // checkConfig TODO
-func checkConfig(cfg *v1alpha4.CombiConfigT) error {
+func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 	spacesRegex := regexp.MustCompile(`\s`)
 
 	configKindValues := []string{
-		ConfigKindValueJSON,
-		ConfigKindValueNGINX,
-		ConfigKindValueLIBCONFIG,
+		encoding.KindJSON,
+		encoding.KindYAML,
+		encoding.KindNGINX,
+		encoding.KindLIBCONFIG,
 	}
 	if !slices.Contains(configKindValues, cfg.Kind) {
 		return fmt.Errorf("kind field must be one of this %v", configKindValues)
@@ -102,10 +101,9 @@ func checkConfig(cfg *v1alpha4.CombiConfigT) error {
 
 	namesCount := map[string]int{}
 	srcTypeValues := []string{
-		ConfigSourceTypeValueRAW,
-		ConfigSourceTypeValueFILE,
-		ConfigSourceTypeValueGIT,
-		ConfigSourceTypeValueK8S,
+		sources.TypeFILE,
+		sources.TypeGIT,
+		sources.TypeK8S,
 	}
 	for si := range cfg.Sources {
 		if !slices.Contains(srcTypeValues, cfg.Sources[si].Type) {
@@ -144,8 +142,8 @@ func checkConfig(cfg *v1alpha4.CombiConfigT) error {
 
 	namesCount = map[string]int{}
 	onValues := []string{
-		ConfigOnValueSUCCESS,
-		ConfigOnValueFAILURE,
+		conditionset.StatusSuccess,
+		conditionset.StatusFail,
 	}
 	for ai := range cfg.Behavior.Actions {
 		if matched := spacesRegex.MatchString(cfg.Behavior.Actions[ai].Name); matched {

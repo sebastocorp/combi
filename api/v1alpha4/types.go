@@ -86,10 +86,10 @@ type ConditionConfigT struct {
 }
 
 type ActionConfigT struct {
-	Name    string           `yaml:"name"`
-	On      string           `yaml:"on"`
-	Command []string         `yaml:"command"`
-	K8s     ActionK8sConfigT `yaml:"k8s"`
+	Name string           `yaml:"name"`
+	On   string           `yaml:"on"`
+	Cmd  []string         `yaml:"command"`
+	K8s  ActionK8sConfigT `yaml:"k8s"`
 }
 
 type ActionK8sConfigT struct {

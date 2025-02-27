@@ -3,11 +3,27 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"os"
+	"regexp"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+// ExpandEnv TODO
+func ExpandEnv(input []byte) []byte {
+	re := regexp.MustCompile(`\${ENV:([A-Za-z_][A-Za-z0-9_]*)}\$`)
+	result := re.ReplaceAllFunc(input, func(match []byte) []byte {
+		key := re.FindSubmatch(match)[1]
+		if value, exists := os.LookupEnv(string(key)); exists {
+			return []byte(value)
+		}
+		return match
+	})
+
+	return result
+}
 
 func GenHashString(args ...string) (h string, err error) {
 	str := ""

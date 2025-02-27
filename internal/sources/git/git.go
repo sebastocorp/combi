@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"combi/api/v1alpha4"
-	"combi/internal/config"
+	"combi/internal/utils"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -114,7 +114,7 @@ func (s *GitSourceT) GetConfig() (conf []byte, err error) {
 		return conf, err
 	}
 
-	conf = config.ExpandEnv(conf)
+	conf = utils.ExpandEnv(conf)
 
 	return conf, err
 }

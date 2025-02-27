@@ -2,7 +2,7 @@ package file
 
 import (
 	"combi/api/v1alpha4"
-	"combi/internal/config"
+	"combi/internal/utils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -62,7 +62,7 @@ func (s *FileSourceT) GetConfig() (conf []byte, err error) {
 		return conf, err
 	}
 
-	conf = config.ExpandEnv(conf)
+	conf = utils.ExpandEnv(conf)
 
 	return conf, err
 }
