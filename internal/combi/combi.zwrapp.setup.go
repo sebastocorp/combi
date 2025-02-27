@@ -64,6 +64,8 @@ func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
 		src, err = sources.GetSource(sources.OptionsT{
 			Name: cfg.Sources[si].Name,
 			Type: cfg.Sources[si].Type,
+			Path: srcpath,
+
 			Raw:  cfg.Sources[si].Raw,
 			File: cfg.Sources[si].File,
 			K8s: sources.OptionsK8sT{
