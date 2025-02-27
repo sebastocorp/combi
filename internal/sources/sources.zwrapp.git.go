@@ -1,12 +1,10 @@
-package git
+package sources
 
 import (
+	"combi/internal/utils"
 	"os"
 	"path/filepath"
 	"reflect"
-
-	"combi/api/v1alpha4"
-	"combi/internal/utils"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -14,31 +12,29 @@ import (
 )
 
 type GitSourceT struct {
-	name       string
-	srcConfig  string
-	storConfig string
+	name    string
+	tmpPath string
 
 	repo repoT
 }
 
 type repoT struct {
-	syncPath string
-	sshKey   string
-	url      string
-	branch   string
+	sshKey string
+	url    string
+	branch string
+	file   string
 }
 
-func NewGitSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *GitSourceT, err error) {
+func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 	s = &GitSourceT{
-		name:       srcConf.Name,
-		srcConfig:  filepath.Join(srcpath, "sync/repo", srcConf.Git.Filepath),
-		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.Git.Filepath)),
+		name:    ops.Name,
+		tmpPath: ops.Path,
 
 		repo: repoT{
-			syncPath: filepath.Join(srcpath, "sync/repo"),
-			sshKey:   srcConf.Git.SshKeyFilepath,
-			url:      srcConf.Git.SshUrl,
-			branch:   srcConf.Git.Branch,
+			sshKey: ops.Git.SshKeyFilepath,
+			url:    ops.Git.Url,
+			branch: ops.Git.Branch,
+			file:   ops.Git.Filepath,
 		},
 	}
 
@@ -46,7 +42,7 @@ func NewGitSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *GitSourceT
 		return s, err
 	}
 
-	err = os.MkdirAll(filepath.Join(srcpath, "sync"), 0777)
+	err = os.MkdirAll(filepath.Join(ops.Path, "sync"), 0777)
 	if err != nil {
 		return s, err
 	}
@@ -59,8 +55,10 @@ func (s *GitSourceT) GetName() string {
 }
 
 func (s *GitSourceT) SyncConfig() (updated bool, err error) {
-	if _, err = os.Stat(s.srcConfig); !os.IsNotExist(err) {
-		if err = os.RemoveAll(s.repo.syncPath); err != nil {
+	syncPath := filepath.Join(s.tmpPath, "sync/repo")
+	srcConfig := filepath.Join(syncPath, s.repo.file)
+	if _, err = os.Stat(srcConfig); !os.IsNotExist(err) {
+		if err = os.RemoveAll(syncPath); err != nil {
 			return updated, err
 		}
 	}
@@ -70,7 +68,7 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 		return updated, err
 	}
 
-	_, err = git.PlainClone(s.repo.syncPath, false, &git.CloneOptions{
+	_, err = git.PlainClone(syncPath, false, &git.CloneOptions{
 		URL:           s.repo.url,
 		Depth:         1,
 		ReferenceName: plumbing.NewBranchReferenceName(s.repo.branch),
@@ -81,16 +79,17 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 		return updated, err
 	}
 
-	srcBytes, err := os.ReadFile(s.srcConfig)
+	srcBytes, err := os.ReadFile(srcConfig)
 	if err != nil {
 		return updated, err
 	}
 
-	storBytes, err := os.ReadFile(s.storConfig)
+	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.repo.file))
+	storBytes, err := os.ReadFile(storConfig)
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(s.storConfig, srcBytes, 0777)
+			err = os.WriteFile(storConfig, srcBytes, 0777)
 			if err != nil {
 				return updated, err
 			}
@@ -100,7 +99,7 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(s.storConfig, srcBytes, 0777)
+		err = os.WriteFile(storConfig, srcBytes, 0777)
 		if err != nil {
 			return updated, err
 		}
@@ -110,7 +109,8 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 }
 
 func (s *GitSourceT) GetConfig() (conf []byte, err error) {
-	if conf, err = os.ReadFile(s.storConfig); err != nil {
+	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.repo.file))
+	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err
 	}
 

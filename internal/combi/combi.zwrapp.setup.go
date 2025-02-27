@@ -54,14 +54,34 @@ func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
 			return err
 		}
 
-		srcpath := filepath.Join(cfg.Settings.TmpObjs.Path, hashKey)
-		err = os.MkdirAll(srcpath, fs.FileMode(cfg.Settings.TmpObjs.Mode))
+		srcpath := filepath.Join(cfg.Settings.TmpFiles.Path, hashKey)
+		err = os.MkdirAll(srcpath, fs.FileMode(cfg.Settings.TmpFiles.Mode))
 		if err != nil {
 			return err
 		}
 
 		var src sources.SourceT
-		src, err = sources.GetSource(cfg.Sources[si], srcpath)
+		src, err = sources.GetSource(sources.OptionsT{
+			Name: cfg.Sources[si].Name,
+			Type: cfg.Sources[si].Type,
+			Raw:  cfg.Sources[si].Raw,
+			File: cfg.Sources[si].File,
+			K8s: sources.OptionsK8sT{
+				InCluster:      cfg.Sources[si].K8s.Context.InCluster,
+				ConfigFilepath: cfg.Sources[si].K8s.Context.ConfigFilepath,
+				MasterUrl:      cfg.Sources[si].K8s.Context.MasterUrl,
+				Kind:           cfg.Sources[si].K8s.Kind,
+				Namespace:      cfg.Sources[si].K8s.Namespace,
+				Name:           cfg.Sources[si].K8s.Name,
+				Key:            cfg.Sources[si].K8s.Key,
+			},
+			Git: sources.OptionsGitT{
+				SshKeyFilepath: cfg.Sources[si].Git.SshKeyFilepath,
+				Url:            cfg.Sources[si].Git.SshUrl,
+				Branch:         cfg.Sources[si].Git.Branch,
+				Filepath:       cfg.Sources[si].Git.Filepath,
+			},
+		})
 		if err != nil {
 			return err
 		}

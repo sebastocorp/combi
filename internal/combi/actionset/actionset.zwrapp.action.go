@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
-	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,9 +16,10 @@ import (
 type actionT struct {
 	Name string
 	On   string
+	In   string
 
-	k8s actionK8sT `json:"-"`
-	cmd []string   `json:"-"`
+	k8s actionK8sT
+	cmd []string
 }
 
 type actionK8sT struct {
@@ -34,6 +34,7 @@ type actionK8sT struct {
 type ActionResultT struct {
 	Name   string `json:"name"`
 	On     string `json:"on"`
+	In     string `json:"in"`
 	Cmd    string `json:"cmd"`
 	Stdout string `json:"stdout"`
 	Stderr string `json:"stderr"`
@@ -42,9 +43,10 @@ type ActionResultT struct {
 func (a *actionT) exec() (r ActionResultT, err error) {
 	r.Name = a.Name
 	r.On = a.On
+	r.In = a.In
 	r.Cmd = strings.Join(a.cmd, " ")
 
-	if reflect.TypeOf(a.k8s) == reflect.TypeOf(actionK8sT{}) {
+	if a.In == TypeLOCAL {
 		var stdout, stderr bytes.Buffer
 		cmd := exec.Command(a.cmd[0], a.cmd[1:]...)
 		cmd.Stdout = &stdout

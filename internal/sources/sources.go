@@ -1,13 +1,5 @@
 package sources
 
-import (
-	"combi/api/v1alpha4"
-	"combi/internal/sources/file"
-	"combi/internal/sources/git"
-	"combi/internal/sources/k8s"
-	"combi/internal/sources/raw"
-)
-
 const (
 	TypeRAW  = "RAW"
 	TypeFILE = "FILE"
@@ -21,23 +13,51 @@ type SourceT interface {
 	GetConfig() ([]byte, error)
 }
 
-func GetSource(srcCfg v1alpha4.SourceConfigT, srcpath string) (SourceT, error) {
-	switch srcCfg.Type {
+type OptionsT struct {
+	Name string
+	Type string
+	Path string
+
+	Raw  string
+	File string
+	Git  OptionsGitT
+	K8s  OptionsK8sT
+}
+
+type OptionsGitT struct {
+	SshKeyFilepath string
+	Url            string
+	Branch         string
+	Filepath       string
+}
+
+type OptionsK8sT struct {
+	InCluster      bool
+	ConfigFilepath string
+	MasterUrl      string
+	Kind           string
+	Namespace      string
+	Name           string
+	Key            string
+}
+
+func GetSource(ops OptionsT) (SourceT, error) {
+	switch ops.Type {
 	case TypeRAW:
 		{
-			return raw.NewRawSource(srcCfg, srcpath)
+			return NewRawSource(ops)
 		}
 	case TypeFILE:
 		{
-			return file.NewFileSource(srcCfg, srcpath)
+			return NewFileSource(ops)
 		}
 	case TypeGIT:
 		{
-			return git.NewGitSource(srcCfg, srcpath)
+			return NewGitSource(ops)
 		}
 	case TypeK8S:
 		{
-			return k8s.NewK8sSource(srcCfg, srcpath)
+			return NewK8sSource(ops)
 		}
 	}
 	return nil, nil

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"combi/api/v1alpha4"
+	"combi/internal/combi/actionset"
 	"combi/internal/combi/conditionset"
 	"combi/internal/encoding"
 	"combi/internal/sources"
@@ -30,7 +31,7 @@ func parseConfig(cfgBytes []byte) (cfg any, err error) {
 	}
 
 	switch avc.ApiVersion {
-	case "v1alpha4":
+	case "combi/v1alpha4":
 		{
 			cfg, err = v1alpha4Parse(cfgBytes)
 		}
@@ -87,12 +88,12 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 		cfg.Settings.Target.Mode = 0777
 	}
 
-	if cfg.Settings.TmpObjs.Path == "" {
-		cfg.Settings.TmpObjs.Path = "/tmp/combi"
+	if cfg.Settings.TmpFiles.Path == "" {
+		cfg.Settings.TmpFiles.Path = "/tmp/combi"
 	}
 
-	if cfg.Settings.TmpObjs.Mode == 0 {
-		cfg.Settings.TmpObjs.Mode = 0777
+	if cfg.Settings.TmpFiles.Mode == 0 {
+		cfg.Settings.TmpFiles.Mode = 0777
 	}
 
 	//------------------------------
@@ -102,6 +103,7 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 	namesCount := map[string]int{}
 	srcTypeValues := []string{
 		sources.TypeFILE,
+		sources.TypeRAW,
 		sources.TypeGIT,
 		sources.TypeK8S,
 	}
@@ -145,6 +147,10 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 		conditionset.StatusSuccess,
 		conditionset.StatusFail,
 	}
+	inValues := []string{
+		actionset.TypeLOCAL,
+		actionset.TypeK8S,
+	}
 	for ai := range cfg.Behavior.Actions {
 		if matched := spacesRegex.MatchString(cfg.Behavior.Actions[ai].Name); matched {
 			return fmt.Errorf("action name '%s' contains spaces", cfg.Behavior.Actions[ai].Name)
@@ -152,6 +158,13 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 
 		if !slices.Contains(onValues, cfg.Behavior.Actions[ai].On) {
 			return fmt.Errorf("action '%s' on field must be one of this %v", cfg.Behavior.Actions[ai].Name, onValues)
+		}
+
+		if cfg.Behavior.Actions[ai].In == "" {
+			cfg.Behavior.Actions[ai].In = actionset.TypeLOCAL
+		}
+		if !slices.Contains(inValues, cfg.Behavior.Actions[ai].In) {
+			return fmt.Errorf("action '%s' in field must be one of this %v", cfg.Behavior.Actions[ai].Name, inValues)
 		}
 
 		if _, ok := namesCount[cfg.Behavior.Actions[ai].Name]; ok {

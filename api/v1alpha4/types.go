@@ -3,10 +3,11 @@ package v1alpha4
 import "time"
 
 type CombiConfigT struct {
-	Kind     string          `yaml:"kind"`
-	Settings SettingsConfigT `yaml:"settings"`
-	Sources  []SourceConfigT `yaml:"sources"`
-	Behavior BehaviorConfigT `yaml:"behavior"`
+	ApiVersion string          `yaml:"apiVersion"`
+	Kind       string          `yaml:"kind"`
+	Settings   SettingsConfigT `yaml:"settings"`
+	Sources    []SourceConfigT `yaml:"sources"`
+	Behavior   BehaviorConfigT `yaml:"behavior"`
 }
 
 //--------------------------------------------------------------
@@ -14,17 +15,17 @@ type CombiConfigT struct {
 //--------------------------------------------------------------
 
 type SettingsConfigT struct {
-	Logger   LoggerConfigT  `yaml:"logger"`
-	SyncTime time.Duration  `yaml:"syncTime"`
-	Target   TargetConfigT  `yaml:"target"`
-	TmpObjs  TmpObjsConfigT `yaml:"tmpObjs"`
+	Logger   LoggerConfigT   `yaml:"logger"`
+	SyncTime time.Duration   `yaml:"syncTime"`
+	Target   TargetConfigT   `yaml:"target"`
+	TmpFiles TmpFilesConfigT `yaml:"tmpFiles"`
 }
 
 type LoggerConfigT struct {
 	Level string `yaml:"level"`
 }
 
-type TmpObjsConfigT struct {
+type TmpFilesConfigT struct {
 	Path string `yaml:"path"`
 	Mode uint32 `yaml:"mode"`
 }
@@ -88,7 +89,8 @@ type ConditionConfigT struct {
 type ActionConfigT struct {
 	Name string           `yaml:"name"`
 	On   string           `yaml:"on"`
-	Cmd  []string         `yaml:"command"`
+	In   string           `yaml:"in"`
+	Cmd  []string         `yaml:"cmd"`
 	K8s  ActionK8sConfigT `yaml:"k8s"`
 }
 

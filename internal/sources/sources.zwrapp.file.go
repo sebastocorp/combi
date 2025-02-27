@@ -1,7 +1,6 @@
-package file
+package sources
 
 import (
-	"combi/api/v1alpha4"
 	"combi/internal/utils"
 	"os"
 	"path/filepath"
@@ -9,16 +8,16 @@ import (
 )
 
 type FileSourceT struct {
-	name       string
-	srcConfig  string
-	storConfig string
+	name    string
+	tmpPath string
+	file    string
 }
 
-func NewFileSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *FileSourceT, err error) {
+func NewFileSource(ops OptionsT) (s *FileSourceT, err error) {
 	s = &FileSourceT{
-		name:       srcConf.Name,
-		srcConfig:  srcConf.File,
-		storConfig: filepath.Join(srcpath, filepath.Base(srcConf.File)),
+		name:    ops.Name,
+		tmpPath: ops.Path,
+		file:    ops.File,
 	}
 
 	return s, err
@@ -29,16 +28,17 @@ func (s *FileSourceT) GetName() string {
 }
 
 func (s *FileSourceT) SyncConfig() (updated bool, err error) {
-	srcBytes, err := os.ReadFile(s.srcConfig)
+	srcBytes, err := os.ReadFile(s.file)
 	if err != nil {
 		return updated, err
 	}
 
-	storBytes, err := os.ReadFile(s.storConfig)
+	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.file))
+	storBytes, err := os.ReadFile(storConfig)
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(s.storConfig, srcBytes, 0777)
+			err = os.WriteFile(storConfig, srcBytes, 0777)
 			if err != nil {
 				return updated, err
 			}
@@ -48,7 +48,7 @@ func (s *FileSourceT) SyncConfig() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(s.storConfig, srcBytes, 0777)
+		err = os.WriteFile(storConfig, srcBytes, 0777)
 		if err != nil {
 			return updated, err
 		}
@@ -58,7 +58,8 @@ func (s *FileSourceT) SyncConfig() (updated bool, err error) {
 }
 
 func (s *FileSourceT) GetConfig() (conf []byte, err error) {
-	if conf, err = os.ReadFile(s.storConfig); err != nil {
+	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.file))
+	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err
 	}
 

@@ -1,9 +1,12 @@
 package actionset
 
 import (
-	"reflect"
-
 	"combi/internal/utils"
+)
+
+const (
+	TypeK8S   = "K8S"
+	TypeLOCAL = "LOCAL"
 )
 
 type ActionSetT struct {
@@ -11,11 +14,12 @@ type ActionSetT struct {
 }
 
 type OptionsT struct {
-	Name string `json:"name"`
-	On   string `json:"on"`
+	Name string
+	On   string
+	In   string
 
-	K8s OptionsK8sT `json:"-"`
-	Cmd []string    `json:"cmd"`
+	K8s OptionsK8sT
+	Cmd []string
 }
 
 type OptionsK8sT struct {
@@ -41,10 +45,11 @@ func (as *ActionSetT) CreateAdd(ops OptionsT) (err error) {
 	a := actionT{
 		Name: ops.Name,
 		On:   ops.On,
+		In:   ops.In,
 		cmd:  ops.Cmd,
 	}
 
-	if reflect.TypeOf(ops.K8s) != reflect.TypeOf(OptionsK8sT{}) {
+	if ops.In == TypeK8S {
 		a.k8s = actionK8sT{
 			namespace: ops.K8s.Namespace,
 			pod:       ops.K8s.Pod,

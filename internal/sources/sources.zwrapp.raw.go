@@ -1,11 +1,9 @@
-package raw
+package sources
 
 import (
+	"combi/internal/utils"
 	"os"
 	"path/filepath"
-
-	"combi/api/v1alpha4"
-	"combi/internal/utils"
 )
 
 type RawSourceT struct {
@@ -13,13 +11,13 @@ type RawSourceT struct {
 	storConfig string
 }
 
-func NewRawSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *RawSourceT, err error) {
+func NewRawSource(ops OptionsT) (s *RawSourceT, err error) {
 	s = &RawSourceT{
-		name:       srcConf.Name,
-		storConfig: filepath.Join(srcpath, "config.raw.txt"),
+		name:       ops.Name,
+		storConfig: filepath.Join(ops.Path, "config.raw.txt"),
 	}
 
-	content := utils.ExpandEnv([]byte(srcConf.Raw))
+	content := utils.ExpandEnv([]byte(ops.Raw))
 	err = os.WriteFile(s.storConfig, content, 0777)
 
 	return s, err

@@ -1,4 +1,4 @@
-package k8s
+package sources
 
 import (
 	"context"
@@ -7,17 +7,17 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"combi/api/v1alpha4"
 	"combi/internal/utils"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type K8sSourceT struct {
-	name       string
-	srcConfig  string
-	storConfig string
+	name    string
+	tmpPath string
 
 	kube kubeT
 }
@@ -31,22 +31,34 @@ type kubeT struct {
 	key       string
 }
 
-func NewK8sSource(srcConf v1alpha4.SourceConfigT, srcpath string) (s *K8sSourceT, err error) {
+func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 	s = &K8sSourceT{
-		name:       srcConf.Name,
-		srcConfig:  filepath.Join(srcpath, "sync", srcConf.K8s.Key),
-		storConfig: filepath.Join(srcpath, srcConf.K8s.Key),
+		name:    ops.Name,
+		tmpPath: ops.Path,
 
 		kube: kubeT{
 			ctx:       context.Background(),
-			kind:      srcConf.K8s.Kind,
-			namespace: srcConf.K8s.Namespace,
-			name:      srcConf.K8s.Name,
-			key:       srcConf.K8s.Key,
+			kind:      ops.K8s.Kind,
+			namespace: ops.K8s.Namespace,
+			name:      ops.K8s.Name,
+			key:       ops.K8s.Key,
 		},
 	}
 
-	s.kube.client, err = newClient(srcConf.K8s.Context)
+	var config *rest.Config
+	if ops.K8s.InCluster {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return s, err
+		}
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags(ops.K8s.MasterUrl, ops.K8s.ConfigFilepath)
+		if err != nil {
+			return s, err
+		}
+	}
+
+	s.kube.client, err = kubernetes.NewForConfig(config)
 
 	return s, err
 }
@@ -88,11 +100,12 @@ func (s *K8sSourceT) SyncConfig() (updated bool, err error) {
 		}
 	}
 
-	storBytes, err := os.ReadFile(s.storConfig)
+	storConfig := filepath.Join(s.tmpPath, s.kube.key)
+	storBytes, err := os.ReadFile(storConfig)
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(s.storConfig, srcBytes, 0777)
+			err = os.WriteFile(storConfig, srcBytes, 0777)
 			if err != nil {
 				return updated, err
 			}
@@ -102,7 +115,7 @@ func (s *K8sSourceT) SyncConfig() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(s.storConfig, srcBytes, 0777)
+		err = os.WriteFile(storConfig, srcBytes, 0777)
 		if err != nil {
 			return updated, err
 		}
@@ -112,7 +125,8 @@ func (s *K8sSourceT) SyncConfig() (updated bool, err error) {
 }
 
 func (s *K8sSourceT) GetConfig() (conf []byte, err error) {
-	if conf, err = os.ReadFile(s.storConfig); err != nil {
+	storConfig := filepath.Join(s.tmpPath, s.kube.key)
+	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err
 	}
 

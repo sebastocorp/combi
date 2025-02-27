@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	StatusSuccess = "success"
-	StatusFail    = "fail"
+	StatusSuccess = "SUCCESS"
+	StatusFail    = "FAIL"
 )
 
 type ConditionSetT struct {
