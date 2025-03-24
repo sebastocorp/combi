@@ -6,12 +6,12 @@ import (
 	"slices"
 	"time"
 
-	"combi/internal/combi/actionset"
-	"combi/internal/combi/conditionset"
 	"combi/internal/encoding"
 	"combi/internal/globals"
 	"combi/internal/logger"
 	"combi/internal/sources"
+	"combi/internal/target/actionset"
+	"combi/internal/target/conditionset"
 )
 
 type CombiT struct {

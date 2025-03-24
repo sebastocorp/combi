@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"combi/api/v1alpha4"
-	"combi/internal/combi/actionset"
-	"combi/internal/combi/conditionset"
 	"combi/internal/encoding"
 	"combi/internal/sources"
+	"combi/internal/target/actionset"
+	"combi/internal/target/conditionset"
 	"combi/internal/utils"
 
 	"gopkg.in/yaml.v3"

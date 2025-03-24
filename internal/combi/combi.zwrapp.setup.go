@@ -1,17 +1,18 @@
 package combi
 
 import (
-	"combi/api/v1alpha4"
-	"combi/internal/combi/actionset"
-	"combi/internal/combi/conditionset"
-	"combi/internal/encoding"
-	"combi/internal/logger"
-	"combi/internal/sources"
-	"combi/internal/utils"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"combi/api/v1alpha4"
+	"combi/internal/encoding"
+	"combi/internal/logger"
+	"combi/internal/sources"
+	"combi/internal/target/actionset"
+	"combi/internal/target/conditionset"
+	"combi/internal/utils"
 )
 
 // setup TODO

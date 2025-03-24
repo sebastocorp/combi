@@ -1,6 +1,6 @@
-kind: "" # JSON|YAML|LIBCONFIG|NGINX
-
-settings:
+apiVersion: combi/v1alpha5
+kind: Combi
+conf:
   syncTime: "" # duration type: 5s, 1h, etc.
   logger:
     level: "" # info|warning|error|debug
@@ -8,60 +8,63 @@ settings:
     path: ""
     mode: 0
 
-credentials: []
-# credentials:
-#   - name: ""
-#     type: "" # SSH_KEY|K8S
-#     sshKey:
-#       filepath: ""
-#       base64Str: ""
-#     k8s:
-#       inCluster: true
-#       configFilepath: ""
-#       masterUrl: ""
+  sources:
+    encoder: "" # JSON|YAML|LIBCONFIG|NGINX
+    
+    credentials: []
+    # credentials:
+    #   - name: ""
+    #     type: "" # SSH_KEY|K8S
+    #     sshKey:
+    #       filepath: ""
+    #       base64Str: ""
+    #     k8s:
+    #       inCluster: true
+    #       configFilepath: ""
+    #       masterUrl: ""
+    
+    list: []
+    # list:
+    #   - name: ""
+    #     type: "" # RAW|FILE|GIT|K8S
+    #     raw: ""
+    #     file: ""
+    #     git:
+    #       credential: ""
+    #       sshUrl: ""
+    #       branch: ""
+    #       filepath: ""
+    #     k8s:
+    #       credential: ""
+    #       kind: ""
+    #       namespace: ""
+    #       name: ""
+    #       key: ""
 
-sources: []
-# sources:
-#   - name: ""
-#     type: "" # RAW|FILE|GIT|K8S
-#     raw: ""
-#     file: ""
-#     git:
-#       credential: ""
-#       sshUrl: ""
-#       branch: ""
-#       filepath: ""
-#     k8s:
-#       credential: ""
-#       kind: ""
-#       namespace: ""
-#       name: ""
-#       key: ""
+  target:
+    path: ""
+    file: ""
+    mode: 0
+    build:
+      type: "" # MERGE|TEMPLATE
+      merge: []
+      template: ""
 
-target:
-  path: ""
-  file: ""
-  mode: 0
-  build:
-    type: "" # MERGE|TEMPLATE
-    merge: []
-    template: ""
+    conditions: []
+    # conditions:
+    #   - name: ""
+    #     mandatory: true
+    #     template: ""
+    #     expect: ""
 
-conditions: []
-# conditions:
-#   - name: ""
-#     mandatory: true
-#     template: ""
-#     expect: ""
-
-actions: []
-# actions:
-#   - name: ""
-#     on: "" # SUCCESS|FAILURE
-#     command: []
-#     k8s:
-#       credential: ""
-#       namespace: ""
-#       pod: ""
-#       container: ""
-#       command: []
+    actions: []
+    # actions:
+    #   - name: ""
+    #     on: "" # SUCCESS|FAILURE
+    #     command: []
+    #     k8s:
+    #       credential: ""
+    #       namespace: ""
+    #       pod: ""
+    #       container: ""
+    #       command: []
