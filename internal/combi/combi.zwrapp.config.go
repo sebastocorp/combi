@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"combi/api/v1alpha4"
+	"combi/api/v1alpha5"
 	"combi/internal/encoding"
 	"combi/internal/sources"
 	"combi/internal/target/actionset"
@@ -16,32 +17,54 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ApiVersionConfigT struct {
+type AVKT struct {
 	ApiVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
 }
 
 // parseConfig TODO
 func parseConfig(cfgBytes []byte) (cfg any, err error) {
 	cfgBytes = utils.ExpandEnv(cfgBytes)
 
-	avc := ApiVersionConfigT{}
-	err = yaml.Unmarshal(cfgBytes, &avc)
+	avk := AVKT{}
+	err = yaml.Unmarshal(cfgBytes, &avk)
 	if err != nil {
 		return cfg, err
 	}
 
-	switch avc.ApiVersion {
+	switch avk.ApiVersion {
+	case "combi/v1alpha5":
+		{
+			if avk.Kind != "Combi" {
+				return cfg, fmt.Errorf("not supported kind in version, must be 'Combi'")
+			}
+			cfg, err = v1alpha5Parse(cfgBytes)
+		}
 	case "combi/v1alpha4":
 		{
 			cfg, err = v1alpha4Parse(cfgBytes)
 		}
 	default:
 		{
-			return cfg, fmt.Errorf("unsupported apiVersion '%s'", avc.ApiVersion)
+			return cfg, fmt.Errorf("unsupported apiVersion '%s'", avk.ApiVersion)
 		}
 	}
 
 	return cfg, err
+}
+
+func v1alpha5Parse(cfgBytes []byte) (cfg v1alpha5.CombiT, err error) {
+	err = yaml.Unmarshal(cfgBytes, &cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	err = v1alpha5Check(&cfg)
+	return cfg, err
+}
+
+func v1alpha5Check(cfg *v1alpha5.CombiT) error {
+	return nil
 }
 
 func v1alpha4Parse(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {

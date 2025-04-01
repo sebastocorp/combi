@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"combi/api/v1alpha4"
+	"combi/api/v1alpha5"
 	"combi/internal/encoding"
 	"combi/internal/logger"
 	"combi/internal/sources"
@@ -18,6 +19,10 @@ import (
 // setup TODO
 func (c *CombiT) setup(cfg any) (err error) {
 	switch cfg := cfg.(type) {
+	case v1alpha5.CombiT:
+		{
+			err = c.v1alpha5Setup(cfg)
+		}
 	case v1alpha4.CombiConfigT:
 		{
 			err = c.v1alpha4Setup(cfg)
@@ -28,6 +33,11 @@ func (c *CombiT) setup(cfg any) (err error) {
 		}
 	}
 	return err
+}
+
+// v1alpha4Setup TODO
+func (c *CombiT) v1alpha5Setup(cfg v1alpha5.CombiT) error {
+	return nil
 }
 
 // v1alpha4Setup TODO
