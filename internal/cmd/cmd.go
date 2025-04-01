@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"combi/internal/cmd/run"
-	"combi/internal/cmd/version"
+	"combi/internal/cmd/cmdrun"
+	"combi/internal/cmd/cmdver"
 
 	"github.com/spf13/cobra"
 )
@@ -21,8 +21,8 @@ func NewRootCommand(name string) *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		version.NewCommand(),
-		run.NewCommand(),
+		cmdver.NewCommand(),
+		cmdrun.NewCommand(),
 	)
 
 	return cmd

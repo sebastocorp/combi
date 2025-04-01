@@ -1,4 +1,4 @@
-package run
+package cmdrun
 
 import (
 	"log"

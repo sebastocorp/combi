@@ -1,7 +1,9 @@
 # Build the manager binary
-FROM golang:1.22.6 AS builder
+FROM golang:1.24.0 AS builder
 ARG TARGETOS
 ARG TARGETARCH
+
+ARG LDFLAGS_VALUE
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -19,17 +21,19 @@ COPY ./ .
 # was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
 # the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o combi ./cmd/combi
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a \
+    -ldflags "${LDFLAGS_VALUE}" \    
+    -o combi ./cmd/combi
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM debian:bullseye-slim
+FROM alpine:3.21.3
+
 WORKDIR /
 COPY --from=builder /workspace/combi .
-RUN apt update && \
-    apt install --yes openssh-client && \
-    mkdir -p ~/.ssh && \
-    ssh-keyscan -H github.com >> ~/.ssh/known_hosts && \
-    echo 'export SSH_KNOWN_HOSTS=~/.ssh/known_hosts' >> ~/.bashrc
 
+RUN apk add --no-cache openssh-client && mkdir -p ~/.ssh && \
+    ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+ENV SSH_KNOWN_HOSTS=~/.ssh/known_hosts
 ENTRYPOINT ["/combi"]

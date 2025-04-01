@@ -1,14 +1,9 @@
-BINARY ?= combi
-IMG_REG ?= freepik-company
+PROJECT ?= combi
+PROJECT_VERSION ?= $(shell cat version)
+PROJECT_GOVER ?= $(shell grep '^go ' go.mod | cut -d ' ' -f 2)
+PROJECT_COMMIT ?= $(shell git rev-parse --short HEAD)
 
-# Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/$(IMG_REG)/$(BINARY):latest
-
-# CONTAINER_TOOL defines the container tool to be used for building images.
-# Be aware that the target commands are only tested with Docker which is
-# scaffolded by default. However, you might want to replace it to use other
-# tools. (i.e. podman)
-CONTAINER_TOOL ?= docker
+BINARY ?= $(PROJECT)
 
 ##@ General
 
@@ -39,6 +34,45 @@ vet: ## Run go vet against code.
 
 ##@ Build
 
+VERSION_PACKAGE_PATH ?= $(PROJECT)/internal/cmd/cmdver
+BUILD_LDFLAGS_VERSION ?= -X $(VERSION_PACKAGE_PATH).version=$(PROJECT_VERSION)
+BUILD_LDFLAGS_GOVER   ?= -X $(VERSION_PACKAGE_PATH).golang=$(PROJECT_GOVER)
+BUILD_LDFLAGS_COMMIT  ?= -X $(VERSION_PACKAGE_PATH).commit=$(PROJECT_COMMIT)
+BUILD_LDFLAGS_VALUE ?= "$(BUILD_LDFLAGS_VERSION) $(BUILD_LDFLAGS_GOVER) $(BUILD_LDFLAGS_COMMIT)"
+BUILD_LDFLAGS ?= -ldflags $(BUILD_LDFLAGS_VALUE)
+
+BINPATH ?= ./bin/$(BINARY)
+
+$(BINPATH): fmt vet
+	go build $(BUILD_LDFLAGS) -o bin/$(BINARY) cmd/$(PROJECT)/main.go
+
+.PHONY: build
+build: $(BINPATH) ## Build manager binary.
+
+RUN_ARGS ?= version
+
+.PHONY: run
+run: build ## Run a command from your host (define RUN_ARGS to custom run).
+	./bin/$(BINARY) $(RUN_ARGS)
+
+.PHONY: vrun
+vrun: fmt vet ## Run a command from your host (define RUN_ARGS to custom run).
+	go run $(BUILD_LDFLAGS) cmd/$(PROJECT)/main.go $(RUN_ARGS)
+
+##@ Container
+
+# CONTAINER_TOOL defines the container tool to be used for building images.
+# Be aware that the target commands are only tested with Docker which is
+# scaffolded by default. However, you might want to replace it to use other
+# tools. (i.e. podman)
+CONTAINER_TOOL ?= docker
+
+# Image URL to use all building/pushing image targets
+IMG_REGISTRY ?= ghcr.io/freepik-company
+IMG_NAME ?= $(PROJECT)
+IMG_TAG ?= latest
+IMG ?= $(IMG_REGISTRY)/$(IMG_NAME):$(IMG_TAG)
+
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
 # - be able to use docker buildx. More info: https://docs.docker.com/build/buildx/
@@ -53,37 +87,24 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	sed -e 's/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/g' Dockerfile > Dockerfile.cross
 	- $(CONTAINER_TOOL) buildx create --name project-builder
 	$(CONTAINER_TOOL) buildx use project-builder
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --build-arg LDFLAGS_VALUE=$(BUILD_LDFLAGS_VALUE) --tag $(IMG) --file Dockerfile.cross .
 	- $(CONTAINER_TOOL) buildx rm project-builder
 	rm Dockerfile.cross
 
-docker-kind-build:
-	docker build --tag '$(BINARY):test' .
-	kind load docker-image $(BINARY):test
+.PHONY: container-build
+container-build: ## Build the container image
+	$(CONTAINER_TOOL) build --build-arg LDFLAGS_VALUE=$(BUILD_LDFLAGS_VALUE) --no-cache --tag $(IMG) --file Dockerfile .
 
-container-build:
-	$(CONTAINER_TOOL) build --no-cache --tag ${IMG} -f Dockerfile .
+.PHONY: container-push
+container-push: ## Push the container image
+	$(CONTAINER_TOOL) push $(IMG)
 
-container-push: container-build
-	$(CONTAINER_TOOL) push ${IMG}
+CONTAINER_ARGS ?= version
 
-.PHONY: build
-build: fmt vet ## Build manager binary.
-	go build -o bin/combi cmd/combi/main.go
+.PHONY: container-run
+container-run: ## Run the container image
+	$(CONTAINER_TOOL) run $(IMG) $(CONTAINER_ARGS)
 
-# Sync time flags
-DAEMON_SYNC_TIME?=5s
-DAEMON_SYNC_FLAGS?=--sync-time=$(DAEMON_SYNC_TIME)
-# Source config flags
-DAEMON_SRC_TYPE?=local
-DAEMON_SRC_PATH?=config/samples/libconfig.yaml
-DAEMON_SRC_FIELD?=example1
-DAEMON_SRC_FLAGS?=--source-type=$(DAEMON_SRC_TYPE) --source-path=$(DAEMON_SRC_PATH) --source-field=$(DAEMON_SRC_FIELD)
-# Extra config flags
-DAEMON_EXTRA_FLAGS?=
-# Daemon subcommand flags
-DAEMON_FLAGS?=$(DAEMON_SYNC_FLAGS) $(DAEMON_SRC_FLAGS) $(DAEMON_EXTRA_FLAGS)
-
-.PHONY: run-daemon
-run-daemon: fmt vet ## Run a command from your host (define DAEMON_FLAGS to custom run daemon).
-	go run cmd/combi/main.go daemon $(DAEMON_FLAGS)
+.PHONY: kind-load
+kind-load: ## Loads the container image in kind cluster
+	kind load docker-image $(IMG)
