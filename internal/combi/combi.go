@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"combi/internal/credentials"
 	"combi/internal/encoding"
 	"combi/internal/globals"
 	"combi/internal/logger"
@@ -23,6 +24,9 @@ type CombiT struct {
 	srcs     []sources.SourceT
 	cs       *conditionset.ConditionSetT
 	as       *actionset.ActionSetT
+
+	// new
+	creds *credentials.CredentialSetT
 }
 
 type TargetT struct {
@@ -30,6 +34,7 @@ type TargetT struct {
 	mode     fs.FileMode
 }
 
+// NewCombi TODO
 func NewCombi(configFilePath string) (c *CombiT, err error) {
 	cfgBytes, err := os.ReadFile(configFilePath)
 	if err != nil {
@@ -50,6 +55,7 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 	return c, err
 }
 
+// Run TODO
 func (c *CombiT) Run() {
 	c.log.Info("init combi", nil)
 
@@ -190,6 +196,7 @@ func (c *CombiT) Run() {
 	}
 }
 
+// Stop TODO
 func (c *CombiT) Stop() {
 	c.log.Info("stop combi", map[string]any{})
 }

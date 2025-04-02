@@ -36,7 +36,7 @@ func parseConfig(cfgBytes []byte) (cfg any, err error) {
 	case "combi/v1alpha5":
 		{
 			if avk.Kind != "Combi" {
-				return cfg, fmt.Errorf("not supported kind in version, must be 'Combi'")
+				return cfg, fmt.Errorf("not supported kind in apiVersion, must be 'Combi'")
 			}
 			cfg, err = v1alpha5Parse(cfgBytes)
 		}
@@ -53,6 +53,7 @@ func parseConfig(cfgBytes []byte) (cfg any, err error) {
 	return cfg, err
 }
 
+// v1alpha5Parse TODO
 func v1alpha5Parse(cfgBytes []byte) (cfg v1alpha5.CombiT, err error) {
 	err = yaml.Unmarshal(cfgBytes, &cfg)
 	if err != nil {
@@ -63,10 +64,12 @@ func v1alpha5Parse(cfgBytes []byte) (cfg v1alpha5.CombiT, err error) {
 	return cfg, err
 }
 
+// v1alpha5Check TODO
 func v1alpha5Check(cfg *v1alpha5.CombiT) error {
 	return nil
 }
 
+// v1alpha4Parse TODO
 func v1alpha4Parse(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
 	err = yaml.Unmarshal(cfgBytes, &cfg)
 	if err != nil {
@@ -77,7 +80,7 @@ func v1alpha4Parse(cfgBytes []byte) (cfg v1alpha4.CombiConfigT, err error) {
 	return cfg, err
 }
 
-// checkConfig TODO
+// v1alpha4Check TODO
 func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 	spacesRegex := regexp.MustCompile(`\s`)
 

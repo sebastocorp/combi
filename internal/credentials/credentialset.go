@@ -13,13 +13,13 @@ type CredentialSetT struct {
 
 type OptionsT struct {
 	Name   string
-	Typep  string
+	Type   string
 	Kube   OptionsKubeT
 	SshKey OptionsSshKeyT
 }
 
 func (cs *CredentialSetT) Add(ops OptionsT) (err error) {
-	switch ops.Typep {
+	switch ops.Type {
 	case TypeK8S:
 		{
 			cs.set[ops.Name], err = NewKube(ops.Kube)
@@ -30,7 +30,7 @@ func (cs *CredentialSetT) Add(ops OptionsT) (err error) {
 		}
 	default:
 		{
-			err = fmt.Errorf("unsupported credential type '%s'", ops.Typep)
+			err = fmt.Errorf("unsupported credential type '%s'", ops.Type)
 		}
 	}
 	return err

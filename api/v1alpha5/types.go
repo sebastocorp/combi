@@ -17,8 +17,9 @@ type ConfT struct {
 	Logger   LoggerT       `yaml:"logger"`
 	TmpFiles TmpFilesT     `yaml:"tmpFiles"`
 
-	Sources SourcesT `yaml:"sources"`
-	Target  TargetT  `yaml:"target"`
+	Credentials []CredentialT `yaml:"credentials"`
+	Sources     SourcesT      `yaml:"sources"`
+	Target      TargetT       `yaml:"target"`
 }
 
 type LoggerT struct {
@@ -31,16 +32,35 @@ type TmpFilesT struct {
 }
 
 //--------------------------------------------------------------
+// CREDENTIALS CONFIG
+//--------------------------------------------------------------
+
+type CredentialT struct {
+	Name   string            `yaml:"name"`
+	Type   string            `yaml:"type"`
+	SshKey CredentialSshKeyT `yaml:"sshKey"`
+	K8s    CredentialK8sT    `yaml:"k8s"`
+}
+
+type CredentialSshKeyT struct {
+	User      string `yaml:"user"`
+	Filepath  string `yaml:"filepath"`
+	Password  string `yaml:"password"`
+}
+
+type CredentialK8sT struct {
+	InCluster      bool   `yaml:"inCluster"`
+	ConfigFilepath string `yaml:"configFilepath"`
+	MasterUrl      string `yaml:"masterUrl"`
+}
+
+//--------------------------------------------------------------
 // SOURCES CONFIG
 //--------------------------------------------------------------
 
 type SourcesT struct {
-	Encoder     string        `yaml:"encoder"`
-	Credentials []CredentialT `yaml:"credentials"`
-	List        []SourceT     `yaml:"list"`
-}
-
-type CredentialT struct {
+	Encoder string    `yaml:"encoder"`
+	List    []SourceT `yaml:"list"`
 }
 
 type SourceT struct {

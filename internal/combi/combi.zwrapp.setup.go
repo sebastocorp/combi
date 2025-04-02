@@ -8,6 +8,7 @@ import (
 
 	"combi/api/v1alpha4"
 	"combi/api/v1alpha5"
+	"combi/internal/credentials"
 	"combi/internal/encoding"
 	"combi/internal/logger"
 	"combi/internal/sources"
@@ -36,7 +37,32 @@ func (c *CombiT) setup(cfg any) (err error) {
 }
 
 // v1alpha4Setup TODO
-func (c *CombiT) v1alpha5Setup(cfg v1alpha5.CombiT) error {
+func (c *CombiT) v1alpha5Setup(cfg v1alpha5.CombiT) (err error) {
+	c.log = logger.NewLogger(logger.GetLevel(cfg.Conf.Logger.Level))
+	c.syncTime = cfg.Conf.SyncTime
+
+	c.creds = &credentials.CredentialSetT{}
+	for _, cv := range cfg.Conf.Credentials {
+		err = c.creds.Add(credentials.OptionsT{
+			Name: cv.Name,
+			Type: cv.Type,
+			SshKey: credentials.OptionsSshKeyT{
+				User:     cv.SshKey.User,
+				SshKey:   cv.SshKey.Filepath,
+				Password: cv.SshKey.Password,
+			},
+			Kube: credentials.OptionsKubeT{
+				InCluster:      cv.K8s.InCluster,
+				ConfigFilepath: cv.K8s.ConfigFilepath,
+				MasterUrl:      cv.K8s.MasterUrl,
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// cfg.Conf.TmpFiles
 	return nil
 }
 
