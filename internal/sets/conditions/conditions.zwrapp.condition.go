@@ -1,4 +1,4 @@
-package conditionset
+package conditions
 
 import (
 	"bytes"

@@ -1,7 +1,9 @@
 package sources
 
 import (
+	"combi/internal/sets/credentials"
 	"combi/internal/utils"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,7 +17,12 @@ type GitSourceT struct {
 	name    string
 	tmpPath string
 
+	cred credT
 	repo repoT
+}
+
+type credT struct {
+	publicSshKey *ssh.PublicKeys
 }
 
 type repoT struct {
@@ -23,6 +30,13 @@ type repoT struct {
 	url    string
 	branch string
 	file   string
+}
+
+type OptionsGitT struct {
+	SshKeyFilepath string
+	Url            string
+	Branch         string
+	Filepath       string
 }
 
 func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
@@ -38,6 +52,14 @@ func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 		},
 	}
 
+	switch ops.Cred.(type) {
+	case credentials.SshKeyT:
+		s.cred.publicSshKey = ops.Cred.(credentials.SshKeyT).PublicKey
+	default:
+		err = fmt.Errorf("wrong credential type in '%s' source, must be SSH_KEY", ops.Name)
+		return s, err
+	}
+
 	if _, err = os.Stat(s.repo.sshKey); err != nil {
 		return s, err
 	}
@@ -50,11 +72,11 @@ func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 	return s, err
 }
 
-func (s *GitSourceT) GetName() string {
+func (s *GitSourceT) Name() string {
 	return s.name
 }
 
-func (s *GitSourceT) SyncConfig() (updated bool, err error) {
+func (s *GitSourceT) sync() (updated bool, err error) {
 	syncPath := filepath.Join(s.tmpPath, "sync/repo")
 	srcConfig := filepath.Join(syncPath, s.repo.file)
 	if _, err = os.Stat(srcConfig); !os.IsNotExist(err) {
@@ -63,17 +85,12 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 		}
 	}
 
-	publicSshKey, err := ssh.NewPublicKeysFromFile("git", s.repo.sshKey, "")
-	if err != nil {
-		return updated, err
-	}
-
 	_, err = git.PlainClone(syncPath, false, &git.CloneOptions{
 		URL:           s.repo.url,
 		Depth:         1,
 		ReferenceName: plumbing.NewBranchReferenceName(s.repo.branch),
 		SingleBranch:  true,
-		Auth:          publicSshKey,
+		Auth:          s.cred.publicSshKey,
 	})
 	if err != nil {
 		return updated, err
@@ -108,7 +125,7 @@ func (s *GitSourceT) SyncConfig() (updated bool, err error) {
 	return updated, err
 }
 
-func (s *GitSourceT) GetConfig() (conf []byte, err error) {
+func (s *GitSourceT) get() (conf []byte, err error) {
 	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.repo.file))
 	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err

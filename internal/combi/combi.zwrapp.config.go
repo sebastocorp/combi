@@ -9,9 +9,9 @@ import (
 	"combi/api/v1alpha4"
 	"combi/api/v1alpha5"
 	"combi/internal/encoding"
-	"combi/internal/sources"
-	"combi/internal/target/actionset"
-	"combi/internal/target/conditionset"
+	"combi/internal/sets/actions"
+	"combi/internal/sets/conditions"
+	"combi/internal/sets/sources"
 	"combi/internal/utils"
 
 	"gopkg.in/yaml.v3"
@@ -35,7 +35,7 @@ func parseConfig(cfgBytes []byte) (cfg any, err error) {
 	switch avk.ApiVersion {
 	case "combi/v1alpha5":
 		{
-			if avk.Kind != "Combi" {
+			if avk.Kind != "Configuration" {
 				return cfg, fmt.Errorf("not supported kind in apiVersion, must be 'Combi'")
 			}
 			cfg, err = v1alpha5Parse(cfgBytes)
@@ -129,7 +129,7 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 	namesCount := map[string]int{}
 	srcTypeValues := []string{
 		sources.TypeFILE,
-		sources.TypeRAW,
+		sources.TypeFILERAW,
 		sources.TypeGIT,
 		sources.TypeK8S,
 	}
@@ -170,12 +170,12 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 
 	namesCount = map[string]int{}
 	onValues := []string{
-		conditionset.StatusSuccess,
-		conditionset.StatusFail,
+		conditions.StatusSuccess,
+		conditions.StatusFail,
 	}
 	inValues := []string{
-		actionset.TypeLOCAL,
-		actionset.TypeK8S,
+		actions.TypeLOCAL,
+		actions.TypeK8S,
 	}
 	for ai := range cfg.Behavior.Actions {
 		if matched := spacesRegex.MatchString(cfg.Behavior.Actions[ai].Name); matched {
@@ -187,7 +187,7 @@ func v1alpha4Check(cfg *v1alpha4.CombiConfigT) error {
 		}
 
 		if cfg.Behavior.Actions[ai].In == "" {
-			cfg.Behavior.Actions[ai].In = actionset.TypeLOCAL
+			cfg.Behavior.Actions[ai].In = actions.TypeLOCAL
 		}
 		if !slices.Contains(inValues, cfg.Behavior.Actions[ai].In) {
 			return fmt.Errorf("action '%s' in field must be one of this %v", cfg.Behavior.Actions[ai].Name, inValues)

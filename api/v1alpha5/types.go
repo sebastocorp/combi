@@ -13,22 +13,17 @@ type CombiT struct {
 //--------------------------------------------------------------
 
 type ConfT struct {
-	SyncTime time.Duration `yaml:"syncTime"`
-	Logger   LoggerT       `yaml:"logger"`
-	TmpFiles TmpFilesT     `yaml:"tmpFiles"`
+	SyncTime   time.Duration `yaml:"syncTime"`
+	WorkingDir string        `yaml:"workingDir"`
+	Logger     LoggerT       `yaml:"logger"`
 
 	Credentials []CredentialT `yaml:"credentials"`
-	Sources     SourcesT      `yaml:"sources"`
+	Sources     []SourceT     `yaml:"sources"`
 	Target      TargetT       `yaml:"target"`
 }
 
 type LoggerT struct {
 	Level string `yaml:"level"`
-}
-
-type TmpFilesT struct {
-	Path string `yaml:"path"`
-	Mode uint32 `yaml:"mode"`
 }
 
 //--------------------------------------------------------------
@@ -43,14 +38,14 @@ type CredentialT struct {
 }
 
 type CredentialSshKeyT struct {
-	User      string `yaml:"user"`
-	Filepath  string `yaml:"filepath"`
-	Password  string `yaml:"password"`
+	User       string `yaml:"user"`
+	SshKeyFile string `yaml:"sshKeyFile"`
+	Password   string `yaml:"password"`
 }
 
 type CredentialK8sT struct {
 	InCluster      bool   `yaml:"inCluster"`
-	ConfigFilepath string `yaml:"configFilepath"`
+	KubeconfigPath string `yaml:"kubeconfigPath"`
 	MasterUrl      string `yaml:"masterUrl"`
 }
 
@@ -58,39 +53,27 @@ type CredentialK8sT struct {
 // SOURCES CONFIG
 //--------------------------------------------------------------
 
-type SourcesT struct {
-	Encoder string    `yaml:"encoder"`
-	List    []SourceT `yaml:"list"`
-}
-
 type SourceT struct {
-	Name string     `yaml:"name"`
-	Type string     `yaml:"type"` // values: RAW|FILE|GIT|K8S
-	Raw  string     `yaml:"raw,omitempty"`
-	File string     `yaml:"file,omitempty"`
-	Git  SourceGitT `yaml:"git,omitempty"`
-	K8s  SourceK8sT `yaml:"k8s,omitempty"`
+	Name       string     `yaml:"name"`
+	Type       string     `yaml:"type"`    // values: FILE_RAW|FILE|GIT|K8S
+	Encoder    string     `yaml:"encoder"` // values: YAML|JSON|NGINX|LIBCONFIG
+	Credential string     `yaml:"credential,omitempty"`
+	File       string     `yaml:"file,omitempty"`
+	Git        SourceGitT `yaml:"git,omitempty"`
+	K8s        SourceK8sT `yaml:"k8s,omitempty"`
 }
 
 type SourceGitT struct {
-	SshUrl         string `yaml:"sshUrl"`
-	SshKeyFilepath string `yaml:"sshKeyFilepath"`
-	Branch         string `yaml:"branch"`
-	Filepath       string `yaml:"filepath"`
+	SshUrl string `yaml:"sshUrl"`
+	Branch string `yaml:"branch"`
+	File   string `yaml:"file"`
 }
 
 type SourceK8sT struct {
-	Context   SourceK8sContextConfigT `yaml:"context"`
-	Kind      string                  `yaml:"kind"`
-	Namespace string                  `yaml:"namespace"`
-	Name      string                  `yaml:"name"`
-	Key       string                  `yaml:"key"`
-}
-
-type SourceK8sContextConfigT struct {
-	InCluster      bool   `yaml:"inCluster"`
-	ConfigFilepath string `yaml:"configFilepath"`
-	MasterUrl      string `yaml:"masterUrl"`
+	Kind      string `yaml:"kind"`
+	Namespace string `yaml:"namespace"`
+	Name      string `yaml:"name"`
+	Key       string `yaml:"key"`
 }
 
 //--------------------------------------------------------------
@@ -98,39 +81,39 @@ type SourceK8sContextConfigT struct {
 //--------------------------------------------------------------
 
 type TargetT struct {
-	Path string `yaml:"path"`
-	File string `yaml:"file"`
-	Mode uint32 `yaml:"mode"`
+	Encoder    string             `yaml:"encoder"` // values: YAML|JSON|NGINX|LIBCONFIG
+	Path       string             `yaml:"path"`
+	File       string             `yaml:"file"`
+	Mode       uint32             `yaml:"mode"`
+	Build      TargetBuildT       `yaml:"build"`
+	Conditions []TargetConditionT `yaml:"conditions,omitempty"`
+	Actions    []TargetActionT    `yaml:"actions,omitempty"`
 }
 
-//--------------------------------------------------------------
-// BEHAVIOR CONFIG
-//--------------------------------------------------------------
-
-type BehaviorConfigT struct {
-	Conditions []ConditionConfigT `yaml:"conditions,omitempty"`
-	Actions    []ActionConfigT    `yaml:"actions,omitempty"`
+type TargetBuildT struct {
+	Type     string `yaml:"type"` // values: TEMPLATE|SOURCE
+	Source   string `yaml:"source"`
+	Template string `yaml:"template"`
 }
 
-type ConditionConfigT struct {
+type TargetConditionT struct {
 	Name      string `yaml:"name"`
 	Mandatory bool   `yaml:"mandatory"`
 	Template  string `yaml:"template"`
 	Expect    string `yaml:"expect"`
 }
 
-type ActionConfigT struct {
+type TargetActionT struct {
 	Name string           `yaml:"name"`
-	On   string           `yaml:"on"`
-	In   string           `yaml:"in"`
+	On   string           `yaml:"on"` // values: SUCCESS|FAILURE
 	Cmd  []string         `yaml:"cmd"`
-	K8s  ActionK8sConfigT `yaml:"k8s"`
+	K8s  TargetActionK8sT `yaml:"k8s,omitempty"`
 }
 
-type ActionK8sConfigT struct {
-	Context   SourceK8sContextConfigT `yaml:"context"`
-	Namespace string                  `yaml:"namespace"`
-	Pod       string                  `yaml:"pod"`
-	Container string                  `yaml:"container"`
-	Command   []string                `yaml:"command"`
+type TargetActionK8sT struct {
+	Credential string   `yaml:"credential"`
+	Namespace  string   `yaml:"namespace"`
+	Pod        string   `yaml:"pod"`
+	Container  string   `yaml:"container"`
+	Cmd        []string `yaml:"cmd"`
 }

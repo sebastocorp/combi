@@ -15,7 +15,7 @@ type KubeT struct {
 
 type OptionsKubeT struct {
 	InCluster      bool
-	ConfigFilepath string
+	KubeconfigPath string
 	MasterUrl      string
 }
 
@@ -31,7 +31,7 @@ func NewKube(ops OptionsKubeT) (kc *KubeT, err error) {
 			return kc, err
 		}
 	} else {
-		config, err = clientcmd.BuildConfigFromFlags(ops.MasterUrl, ops.ConfigFilepath)
+		config, err = clientcmd.BuildConfigFromFlags(ops.MasterUrl, ops.KubeconfigPath)
 		if err != nil {
 			return kc, err
 		}

@@ -1,4 +1,4 @@
-package actionset
+package actions
 
 import (
 	"bytes"

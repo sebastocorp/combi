@@ -1,4 +1,4 @@
-package conditionset
+package conditions
 
 import (
 	"combi/internal/tmpl"
@@ -10,8 +10,8 @@ const (
 	StatusFail    = "FAIL"
 )
 
-type ConditionSetT struct {
-	set []conditionT
+type SetT struct {
+	cs []conditionT
 }
 
 type OptionsT struct {
@@ -26,12 +26,12 @@ type ResultT struct {
 	Crs    []ConditionResultT `json:"conditions"`
 }
 
-func NewConditionSet() (cs *ConditionSetT, err error) {
-	cs = &ConditionSetT{}
-	return cs, err
+func NewSet() (s *SetT, err error) {
+	s = &SetT{}
+	return s, err
 }
 
-func (cs *ConditionSetT) CreateAdd(ops OptionsT) (err error) {
+func (s *SetT) Add(ops OptionsT) (err error) {
 	c := conditionT{
 		Mandatory: ops.Mandatory,
 	}
@@ -46,15 +46,15 @@ func (cs *ConditionSetT) CreateAdd(ops OptionsT) (err error) {
 		return err
 	}
 
-	cs.set = append(cs.set, c)
+	s.cs = append(s.cs, c)
 	return err
 }
 
-func (cs *ConditionSetT) Evaluate(srcs map[string]any) (r ResultT, err error) {
+func (s *SetT) Evaluate(srcs map[string]any) (r ResultT, err error) {
 	r.Status = StatusSuccess
-	for ci := range cs.set {
+	for ci := range s.cs {
 		var cr ConditionResultT
-		cr, err = cs.set[ci].eval(srcs)
+		cr, err = s.cs[ci].eval(srcs)
 		r.Crs = append(r.Crs, cr)
 		if err != nil {
 			r.Status = StatusFail

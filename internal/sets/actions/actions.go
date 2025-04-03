@@ -1,4 +1,4 @@
-package actionset
+package actions
 
 import (
 	"combi/internal/utils"
@@ -9,7 +9,7 @@ const (
 	TypeLOCAL = "LOCAL"
 )
 
-type ActionSetT struct {
+type SetT struct {
 	set []actionT
 }
 
@@ -36,12 +36,12 @@ type ResultT struct {
 	Ars []ActionResultT `json:"actions"`
 }
 
-func NewActionSet() (as *ActionSetT, err error) {
-	as = &ActionSetT{}
+func NewActionSet() (as *SetT, err error) {
+	as = &SetT{}
 	return as, err
 }
 
-func (as *ActionSetT) CreateAdd(ops OptionsT) (err error) {
+func (as *SetT) CreateAdd(ops OptionsT) (err error) {
 	a := actionT{
 		Name: ops.Name,
 		On:   ops.On,
@@ -72,7 +72,7 @@ func (as *ActionSetT) CreateAdd(ops OptionsT) (err error) {
 	return err
 }
 
-func (as *ActionSetT) Execute(on string) (r ResultT, err error) {
+func (as *SetT) Execute(on string) (r ResultT, err error) {
 	for ai := range as.set {
 		if as.set[ai].On == on {
 			var ar ActionResultT

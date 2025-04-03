@@ -3,16 +3,20 @@ package combi
 import (
 	"io/fs"
 	"os"
-	"slices"
 	"time"
 
-	"combi/internal/credentials"
 	"combi/internal/encoding"
 	"combi/internal/globals"
 	"combi/internal/logger"
-	"combi/internal/sources"
-	"combi/internal/target/actionset"
-	"combi/internal/target/conditionset"
+	"combi/internal/sets/actions"
+	"combi/internal/sets/conditions"
+	"combi/internal/sets/credentials"
+	"combi/internal/sets/sources"
+)
+
+const (
+	CombiDirMode   fs.FileMode = 0644
+	CombiFilesMode fs.FileMode = 0755
 )
 
 type CombiT struct {
@@ -21,12 +25,11 @@ type CombiT struct {
 	syncTime time.Duration
 	target   TargetT
 	encoder  encoding.EncoderT
-	srcs     []sources.SourceT
-	cs       *conditionset.ConditionSetT
-	as       *actionset.ActionSetT
 
-	// new
-	creds *credentials.CredentialSetT
+	creds *credentials.SetT
+	srcs  *sources.SetT
+	cons  *conditions.SetT
+	acts  *actions.SetT
 }
 
 type TargetT struct {
@@ -52,6 +55,8 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 		return c, err
 	}
 
+	os.Exit(0)
+
 	return c, err
 }
 
@@ -68,22 +73,11 @@ func (c *CombiT) Run() {
 		c.log.Info("init config sync", extraLogFields)
 
 		// sync sources
-		updatedList := []bool{}
-		for _, sv := range c.srcs {
-			extraLogFields.Set(globals.LogKeySourceName, sv.GetName())
-
-			var updated bool
-			updated, err = sv.SyncConfig()
-			if err != nil {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("source sync failed", extraLogFields)
-				break
-			}
-
-			updatedList = append(updatedList, updated)
-		}
-		extraLogFields.Del(globals.LogKeySourceName)
+		var updated bool
+		updated, err = c.srcs.Sync()
 		if err != nil {
+			extraLogFields.Set(globals.LogKeyError, err.Error())
+			c.log.Error("sources sync failed", extraLogFields)
 			continue
 		}
 
@@ -98,7 +92,7 @@ func (c *CombiT) Run() {
 			tFileExist = false
 		}
 
-		if !slices.Contains(updatedList, true) && tFileExist {
+		if !updated && tFileExist {
 			c.log.Debug("no updates in sources", extraLogFields)
 			continue
 		}
@@ -106,11 +100,9 @@ func (c *CombiT) Run() {
 		// decode and merge sources
 		cfgResult := map[string]any{}
 		cfgSrcBytes := []byte{}
-		for _, sv := range c.srcs {
-			extraLogFields.Set(globals.LogKeySourceName, sv.GetName())
-
+		for si := range c.srcs.Length() {
 			var cfgBytes []byte
-			cfgBytes, err = sv.GetConfig()
+			cfgBytes, err = c.srcs.GetByIndex(si)
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to get source", extraLogFields)
@@ -129,7 +121,7 @@ func (c *CombiT) Run() {
 
 			c.encoder.MergeConfigs(cfgResult, cfg)
 
-			if len(c.srcs) == 1 {
+			if c.srcs.Length() == 1 {
 				cfgSrcBytes = cfgBytes
 			}
 		}
@@ -140,8 +132,8 @@ func (c *CombiT) Run() {
 
 		// check config conditions
 		c.log.Debug("evaluate condition set", extraLogFields)
-		var csr conditionset.ResultT
-		csr, err = c.cs.Evaluate(cfgResult)
+		var csr conditions.ResultT
+		csr, err = c.cons.Evaluate(cfgResult)
 		extraLogFields.Set(globals.LogKeyConditionSet, csr)
 		if err != nil {
 			extraLogFields.Set(globals.LogKeyError, err.Error())
@@ -154,9 +146,9 @@ func (c *CombiT) Run() {
 		extraLogFields.Del(globals.LogKeyConditionSet)
 
 		// config encode and create target file
-		if csr.Status == conditionset.StatusSuccess {
+		if csr.Status == conditions.StatusSuccess {
 			var cfgResultBytes []byte
-			if len(c.srcs) != 1 {
+			if c.srcs.Length() != 1 {
 				cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
 				if err != nil {
 					extraLogFields.Set(globals.LogKeyError, err.Error())
@@ -179,8 +171,8 @@ func (c *CombiT) Run() {
 
 		// execute actions
 		c.log.Debug("executing action set", extraLogFields)
-		var asr actionset.ResultT
-		asr, err = c.as.Execute(csr.Status)
+		var asr actions.ResultT
+		asr, err = c.acts.Execute(csr.Status)
 		extraLogFields.Set(globals.LogKeyActionSet, asr)
 		if err != nil {
 			extraLogFields.Set(globals.LogKeyError, err.Error())

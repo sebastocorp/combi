@@ -8,12 +8,12 @@ import (
 
 	"combi/api/v1alpha4"
 	"combi/api/v1alpha5"
-	"combi/internal/credentials"
 	"combi/internal/encoding"
 	"combi/internal/logger"
-	"combi/internal/sources"
-	"combi/internal/target/actionset"
-	"combi/internal/target/conditionset"
+	"combi/internal/sets/actions"
+	"combi/internal/sets/conditions"
+	"combi/internal/sets/credentials"
+	"combi/internal/sets/sources"
 	"combi/internal/utils"
 )
 
@@ -41,20 +41,51 @@ func (c *CombiT) v1alpha5Setup(cfg v1alpha5.CombiT) (err error) {
 	c.log = logger.NewLogger(logger.GetLevel(cfg.Conf.Logger.Level))
 	c.syncTime = cfg.Conf.SyncTime
 
-	c.creds = &credentials.CredentialSetT{}
+	c.creds, err = credentials.NewSet()
+	if err != nil {
+		return err
+	}
 	for _, cv := range cfg.Conf.Credentials {
 		err = c.creds.Add(credentials.OptionsT{
 			Name: cv.Name,
 			Type: cv.Type,
 			SshKey: credentials.OptionsSshKeyT{
 				User:     cv.SshKey.User,
-				SshKey:   cv.SshKey.Filepath,
+				SshKey:   cv.SshKey.SshKeyFile,
 				Password: cv.SshKey.Password,
 			},
 			Kube: credentials.OptionsKubeT{
 				InCluster:      cv.K8s.InCluster,
-				ConfigFilepath: cv.K8s.ConfigFilepath,
+				KubeconfigPath: cv.K8s.KubeconfigPath,
 				MasterUrl:      cv.K8s.MasterUrl,
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	c.srcs, err = sources.NewSet()
+	if err != nil {
+		return err
+	}
+	for _, sv := range cfg.Conf.Sources {
+		err = c.srcs.Add(sources.OptionsT{
+			Name: sv.Name,
+			Type: sv.Type,
+			Cred: c.creds.Get(sv.Credential),
+
+			File: sv.File,
+			Git: sources.OptionsGitT{
+				Url:      sv.Git.SshUrl,
+				Branch:   sv.Git.Branch,
+				Filepath: sv.Git.File,
+			},
+			K8s: sources.OptionsK8sT{
+				Kind:      sv.K8s.Kind,
+				Namespace: sv.K8s.Namespace,
+				Name:      sv.K8s.Name,
+				Key:       sv.K8s.Key,
 			},
 		})
 		if err != nil {
@@ -97,8 +128,7 @@ func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
 			return err
 		}
 
-		var src sources.SourceT
-		src, err = sources.GetSource(sources.OptionsT{
+		err = c.srcs.Add(sources.OptionsT{
 			Name: cfg.Sources[si].Name,
 			Type: cfg.Sources[si].Type,
 			Path: srcpath,
@@ -124,15 +154,14 @@ func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
 		if err != nil {
 			return err
 		}
-		c.srcs = append(c.srcs, src)
 	}
 
-	c.cs, err = conditionset.NewConditionSet()
+	c.cons, err = conditions.NewSet()
 	if err != nil {
 		return err
 	}
 	for ci := range cfg.Behavior.Conditions {
-		err = c.cs.CreateAdd(conditionset.OptionsT{
+		err = c.cons.Add(conditions.OptionsT{
 			Name:      cfg.Behavior.Conditions[ci].Name,
 			Mandatory: cfg.Behavior.Conditions[ci].Mandatory,
 			Tmpl:      cfg.Behavior.Conditions[ci].Template,
@@ -143,16 +172,16 @@ func (c *CombiT) v1alpha4Setup(cfg v1alpha4.CombiConfigT) error {
 		}
 	}
 
-	c.as, err = actionset.NewActionSet()
+	c.acts, err = actions.NewActionSet()
 	if err != nil {
 		return err
 	}
 	for ai := range cfg.Behavior.Actions {
-		err = c.as.CreateAdd(actionset.OptionsT{
+		err = c.acts.CreateAdd(actions.OptionsT{
 			Name: cfg.Behavior.Actions[ai].Name,
 			On:   cfg.Behavior.Actions[ai].On,
 			Cmd:  cfg.Behavior.Actions[ai].Cmd,
-			K8s: actionset.OptionsK8sT{
+			K8s: actions.OptionsK8sT{
 				Namespace:      cfg.Behavior.Actions[ai].K8s.Namespace,
 				Pod:            cfg.Behavior.Actions[ai].K8s.Pod,
 				Container:      cfg.Behavior.Actions[ai].K8s.Container,

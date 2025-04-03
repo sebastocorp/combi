@@ -31,6 +31,16 @@ type kubeT struct {
 	key       string
 }
 
+type OptionsK8sT struct {
+	InCluster      bool
+	ConfigFilepath string
+	MasterUrl      string
+	Kind           string
+	Namespace      string
+	Name           string
+	Key            string
+}
+
 func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 	s = &K8sSourceT{
 		name:    ops.Name,
@@ -63,11 +73,11 @@ func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 	return s, err
 }
 
-func (s *K8sSourceT) GetName() string {
+func (s *K8sSourceT) Name() string {
 	return s.name
 }
 
-func (s *K8sSourceT) SyncConfig() (updated bool, err error) {
+func (s *K8sSourceT) sync() (updated bool, err error) {
 	srcBytes := []byte{}
 	switch s.kube.kind {
 	case "ConfigMap":
@@ -124,7 +134,7 @@ func (s *K8sSourceT) SyncConfig() (updated bool, err error) {
 	return updated, err
 }
 
-func (s *K8sSourceT) GetConfig() (conf []byte, err error) {
+func (s *K8sSourceT) get() (conf []byte, err error) {
 	storConfig := filepath.Join(s.tmpPath, s.kube.key)
 	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err

@@ -23,11 +23,11 @@ func NewFileSource(ops OptionsT) (s *FileSourceT, err error) {
 	return s, err
 }
 
-func (s *FileSourceT) GetName() string {
+func (s *FileSourceT) Name() string {
 	return s.name
 }
 
-func (s *FileSourceT) SyncConfig() (updated bool, err error) {
+func (s *FileSourceT) sync() (updated bool, err error) {
 	srcBytes, err := os.ReadFile(s.file)
 	if err != nil {
 		return updated, err
@@ -57,7 +57,7 @@ func (s *FileSourceT) SyncConfig() (updated bool, err error) {
 	return updated, err
 }
 
-func (s *FileSourceT) GetConfig() (conf []byte, err error) {
+func (s *FileSourceT) get() (conf []byte, err error) {
 	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.file))
 	if conf, err = os.ReadFile(storConfig); err != nil {
 		return conf, err
