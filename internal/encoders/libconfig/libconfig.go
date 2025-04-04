@@ -7,7 +7,7 @@ package libconfig
 type LibconfigT struct {
 }
 
-func (e *LibconfigT) DecodeConfig(cfgBytes []byte) (cfg map[string]any, err error) {
+func (e *LibconfigT) Decode(cfgBytes []byte) (cfg map[string]any, err error) {
 	ts, err := tokenize(cfgBytes)
 	if err != nil {
 		return nil, err
@@ -22,12 +22,12 @@ func (e *LibconfigT) DecodeConfig(cfgBytes []byte) (cfg map[string]any, err erro
 	return cfg, nil
 }
 
-func (e *LibconfigT) EncodeConfig(cfg map[string]any) (result []byte, err error) {
+func (e *LibconfigT) Encode(cfg map[string]any) (result []byte, err error) {
 	result = []byte(encodeSettings(cfg))
 	return result, err
 }
 
-func (e *LibconfigT) MergeConfigs(dst map[string]any, src map[string]any) error {
+func (e *LibconfigT) Merge(dst map[string]any, src map[string]any) error {
 	mergeSettings(dst, src)
 	return nil
 }

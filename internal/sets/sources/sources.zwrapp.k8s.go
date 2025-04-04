@@ -1,121 +1,122 @@
 package sources
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 
+	"combi/internal/sets/credentials"
 	"combi/internal/utils"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type K8sSourceT struct {
 	name    string
-	tmpPath string
+	encType string
+	workDir string
+	credRef *credentials.KubeT
 
-	kube kubeT
-}
-
-type kubeT struct {
-	ctx       context.Context
-	client    *kubernetes.Clientset
-	kind      string
-	namespace string
-	name      string
-	key       string
+	resKind      string
+	resNamespace string
+	resName      string
+	resKey       string
 }
 
 type OptionsK8sT struct {
-	InCluster      bool
-	ConfigFilepath string
-	MasterUrl      string
-	Kind           string
-	Namespace      string
-	Name           string
-	Key            string
+	Kind      string
+	Namespace string
+	Name      string
+	Key       string
 }
 
 func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 	s = &K8sSourceT{
 		name:    ops.Name,
-		tmpPath: ops.Path,
+		encType: ops.EncType,
+		workDir: ops.WorkDir,
+		credRef: ops.CredRef.(*credentials.KubeT),
 
-		kube: kubeT{
-			ctx:       context.Background(),
-			kind:      ops.K8s.Kind,
-			namespace: ops.K8s.Namespace,
-			name:      ops.K8s.Name,
-			key:       ops.K8s.Key,
-		},
+		resKind:      ops.K8s.Kind,
+		resNamespace: ops.K8s.Namespace,
+		resName:      ops.K8s.Name,
+		resKey:       ops.K8s.Key,
 	}
 
-	var config *rest.Config
-	if ops.K8s.InCluster {
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return s, err
-		}
-	} else {
-		config, err = clientcmd.BuildConfigFromFlags(ops.K8s.MasterUrl, ops.K8s.ConfigFilepath)
-		if err != nil {
-			return s, err
-		}
+	switch ops.CredRef.(type) {
+	case *credentials.KubeT:
+		s.credRef = ops.CredRef.(*credentials.KubeT)
+	default:
+		err = fmt.Errorf("wrong credential type in '%s' source, must be K8S", ops.Name)
+		return s, err
 	}
 
-	s.kube.client, err = kubernetes.NewForConfig(config)
+	err = os.MkdirAll(s.workDir, 0644)
+	if err != nil {
+		return s, err
+	}
 
 	return s, err
 }
 
-func (s *K8sSourceT) Name() string {
+func (s *K8sSourceT) getName() string {
 	return s.name
+}
+
+func (s *K8sSourceT) getData() (srcd SourceDataT, err error) {
+	srcd.Name = s.name
+	srcd.SrcType = TypeK8S
+	srcd.EncType = s.encType
+
+	storConfig := filepath.Join(s.workDir, s.resKey)
+	if srcd.Data, err = os.ReadFile(storConfig); err != nil {
+		return srcd, err
+	}
+	srcd.Data = utils.ExpandEnv(srcd.Data)
+
+	return srcd, err
 }
 
 func (s *K8sSourceT) sync() (updated bool, err error) {
 	srcBytes := []byte{}
-	switch s.kube.kind {
+	switch s.resKind {
 	case "ConfigMap":
 		{
-			res, err := s.kube.client.CoreV1().ConfigMaps(s.kube.namespace).Get(s.kube.ctx, s.kube.name, v1.GetOptions{})
+			res, err := s.credRef.Cli.CoreV1().ConfigMaps(s.resNamespace).Get(s.credRef.Ctx, s.resName, v1.GetOptions{})
 			if err != nil {
 				return updated, err
 			}
 
-			configStr, ok := res.Data[s.kube.key]
+			configStr, ok := res.Data[s.resKey]
 			if !ok {
-				err = fmt.Errorf("key '%s' does not exist in '%s' ConfigMap source", s.kube.key, s.kube.name)
+				err = fmt.Errorf("key '%s' does not exist in '%s' ConfigMap source", s.resKey, s.resName)
 				return updated, err
 			}
 			srcBytes = []byte(configStr)
 		}
 	case "Secret":
 		{
-			res, err := s.kube.client.CoreV1().Secrets(s.kube.namespace).Get(s.kube.ctx, s.kube.name, v1.GetOptions{})
+			res, err := s.credRef.Cli.CoreV1().Secrets(s.resNamespace).Get(s.credRef.Ctx, s.resName, v1.GetOptions{})
 			if err != nil {
 				return updated, err
 			}
 
-			configStr, ok := res.StringData[s.kube.key]
+			configStr, ok := res.StringData[s.resKey]
 			if !ok {
-				err = fmt.Errorf("key '%s' does not exist in '%s' Secret source", s.kube.key, s.kube.name)
+				err = fmt.Errorf("key '%s' does not exist in '%s' Secret source", s.resKey, s.resName)
 				return updated, err
 			}
 			srcBytes = []byte(configStr)
 		}
 	}
 
-	storConfig := filepath.Join(s.tmpPath, s.kube.key)
+	storConfig := filepath.Join(s.workDir, s.resKey)
 	storBytes, err := os.ReadFile(storConfig)
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(storConfig, srcBytes, 0777)
+			err = os.WriteFile(storConfig, srcBytes, 0755)
 			if err != nil {
 				return updated, err
 			}
@@ -123,24 +124,13 @@ func (s *K8sSourceT) sync() (updated bool, err error) {
 		return updated, err
 	}
 
-	if !reflect.DeepEqual(srcBytes, storBytes) {
+	if !reflect.DeepEqual(storBytes, srcBytes) {
 		updated = true
-		err = os.WriteFile(storConfig, srcBytes, 0777)
+		err = os.WriteFile(storConfig, srcBytes, 0755)
 		if err != nil {
 			return updated, err
 		}
 	}
 
 	return updated, err
-}
-
-func (s *K8sSourceT) get() (conf []byte, err error) {
-	storConfig := filepath.Join(s.tmpPath, s.kube.key)
-	if conf, err = os.ReadFile(storConfig); err != nil {
-		return conf, err
-	}
-
-	conf = utils.ExpandEnv(conf)
-
-	return conf, err
 }

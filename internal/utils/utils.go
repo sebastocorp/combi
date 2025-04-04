@@ -25,6 +25,14 @@ func ExpandEnv(input []byte) []byte {
 	return result
 }
 
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
 func GenHashString(args ...string) (h string, err error) {
 	str := ""
 	for _, sv := range args {

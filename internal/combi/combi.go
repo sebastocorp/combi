@@ -3,38 +3,45 @@ package combi
 import (
 	"io/fs"
 	"os"
+	"text/template"
 	"time"
 
-	"combi/internal/encoding"
 	"combi/internal/globals"
 	"combi/internal/logger"
 	"combi/internal/sets/actions"
 	"combi/internal/sets/conditions"
 	"combi/internal/sets/credentials"
 	"combi/internal/sets/sources"
+	"combi/internal/utils"
 )
 
 const (
-	CombiDirMode   fs.FileMode = 0644
-	CombiFilesMode fs.FileMode = 0755
+	TypeTargetBuildSOURCE   = "SOURCE"
+	TypeTargetBuildTEMPLATE = "TEMPLATE"
 )
 
 type CombiT struct {
-	log logger.LoggerT
-
+	log      logger.LoggerT
 	syncTime time.Duration
-	target   TargetT
-	encoder  encoding.EncoderT
+	workDir  string
 
 	creds *credentials.SetT
 	srcs  *sources.SetT
-	cons  *conditions.SetT
-	acts  *actions.SetT
+
+	target TargetT
 }
 
 type TargetT struct {
-	filepath string
-	mode     fs.FileMode
+	encType string
+
+	build string
+	src   string
+	tmpl  *template.Template
+	file  string
+	mode  fs.FileMode
+
+	cons *conditions.SetT
+	acts *actions.SetT
 }
 
 // NewCombi TODO
@@ -54,8 +61,6 @@ func NewCombi(configFilePath string) (c *CombiT, err error) {
 	if err != nil {
 		return c, err
 	}
-
-	os.Exit(0)
 
 	return c, err
 }
@@ -80,60 +85,40 @@ func (c *CombiT) Run() {
 			c.log.Error("sources sync failed", extraLogFields)
 			continue
 		}
-
-		tFileExist := true
-		if _, err = os.Stat(c.target.filepath); err != nil {
-			if !os.IsNotExist(err) {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("unable to check target file", extraLogFields)
-				extraLogFields.Del(globals.LogKeyError)
+		if !updated {
+			if updated = !utils.FileExists(c.target.file); !updated {
+				c.log.Debug("no updates in sources", extraLogFields)
 				continue
 			}
-			tFileExist = false
 		}
 
-		if !updated && tFileExist {
-			c.log.Debug("no updates in sources", extraLogFields)
-			continue
-		}
-
-		// decode and merge sources
-		cfgResult := map[string]any{}
-		cfgSrcBytes := []byte{}
-		for si := range c.srcs.Length() {
-			var cfgBytes []byte
-			cfgBytes, err = c.srcs.GetByIndex(si)
-			if err != nil {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("unable to get source", extraLogFields)
-				extraLogFields.Del(globals.LogKeyError)
-				break
+		// get result file
+		var cfgResult configResultT
+		switch c.target.build {
+		case TypeTargetBuildSOURCE:
+			{
+				cfgResult, err = c.getConfigFromSource()
+				if err != nil {
+					extraLogFields.Set(globals.LogKeyError, err.Error())
+					c.log.Error("get config from source failed", extraLogFields)
+					continue
+				}
 			}
-
-			var cfg map[string]any
-			cfg, err = c.encoder.DecodeConfig(cfgBytes)
-			if err != nil {
-				extraLogFields.Set(globals.LogKeyError, err.Error())
-				c.log.Error("unable to decode source", extraLogFields)
-				extraLogFields.Del(globals.LogKeyError)
-				break
-			}
-
-			c.encoder.MergeConfigs(cfgResult, cfg)
-
-			if c.srcs.Length() == 1 {
-				cfgSrcBytes = cfgBytes
+		case TypeTargetBuildTEMPLATE:
+			{
+				cfgResult, err = c.getConfigFromTemplate()
+				if err != nil {
+					extraLogFields.Set(globals.LogKeyError, err.Error())
+					c.log.Error("get config from template failed", extraLogFields)
+					continue
+				}
 			}
 		}
-		if err != nil {
-			continue
-		}
-		extraLogFields.Del(globals.LogKeySourceName)
 
 		// check config conditions
 		c.log.Debug("evaluate condition set", extraLogFields)
 		var csr conditions.ResultT
-		csr, err = c.cons.Evaluate(cfgResult)
+		csr, err = c.target.cons.Evaluate(cfgResult.Map)
 		extraLogFields.Set(globals.LogKeyConditionSet, csr)
 		if err != nil {
 			extraLogFields.Set(globals.LogKeyError, err.Error())
@@ -147,20 +132,7 @@ func (c *CombiT) Run() {
 
 		// config encode and create target file
 		if csr.Status == conditions.StatusSuccess {
-			var cfgResultBytes []byte
-			if c.srcs.Length() != 1 {
-				cfgResultBytes, err = c.encoder.EncodeConfig(cfgResult)
-				if err != nil {
-					extraLogFields.Set(globals.LogKeyError, err.Error())
-					c.log.Error("unable to generate config", extraLogFields)
-					extraLogFields.Del(globals.LogKeyError)
-					continue
-				}
-			} else {
-				cfgResultBytes = cfgSrcBytes
-			}
-
-			err = os.WriteFile(c.target.filepath, cfgResultBytes, c.target.mode)
+			err = os.WriteFile(c.target.file, cfgResult.Data, c.target.mode)
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to create target file", extraLogFields)
@@ -172,7 +144,7 @@ func (c *CombiT) Run() {
 		// execute actions
 		c.log.Debug("executing action set", extraLogFields)
 		var asr actions.ResultT
-		asr, err = c.acts.Execute(csr.Status)
+		asr, err = c.target.acts.Execute(csr.Status)
 		extraLogFields.Set(globals.LogKeyActionSet, asr)
 		if err != nil {
 			extraLogFields.Set(globals.LogKeyError, err.Error())

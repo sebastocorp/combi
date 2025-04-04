@@ -10,61 +10,46 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type GitSourceT struct {
 	name    string
-	tmpPath string
+	encType string
+	workDir string
+	credRef *credentials.SshKeyT
 
-	cred credT
-	repo repoT
-}
-
-type credT struct {
-	publicSshKey *ssh.PublicKeys
-}
-
-type repoT struct {
-	sshKey string
-	url    string
-	branch string
-	file   string
+	repoURL    string
+	repoBranch string
+	repoFile   string
 }
 
 type OptionsGitT struct {
-	SshKeyFilepath string
-	Url            string
-	Branch         string
-	Filepath       string
+	Url      string
+	Branch   string
+	Filepath string
 }
 
 func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 	s = &GitSourceT{
 		name:    ops.Name,
-		tmpPath: ops.Path,
+		encType: ops.EncType,
+		workDir: ops.WorkDir,
+		credRef: ops.CredRef.(*credentials.SshKeyT),
 
-		repo: repoT{
-			sshKey: ops.Git.SshKeyFilepath,
-			url:    ops.Git.Url,
-			branch: ops.Git.Branch,
-			file:   ops.Git.Filepath,
-		},
+		repoURL:    ops.Git.Url,
+		repoBranch: ops.Git.Branch,
+		repoFile:   ops.Git.Filepath,
 	}
 
-	switch ops.Cred.(type) {
-	case credentials.SshKeyT:
-		s.cred.publicSshKey = ops.Cred.(credentials.SshKeyT).PublicKey
+	switch ops.CredRef.(type) {
+	case *credentials.SshKeyT:
+		s.credRef = ops.CredRef.(*credentials.SshKeyT)
 	default:
 		err = fmt.Errorf("wrong credential type in '%s' source, must be SSH_KEY", ops.Name)
 		return s, err
 	}
 
-	if _, err = os.Stat(s.repo.sshKey); err != nil {
-		return s, err
-	}
-
-	err = os.MkdirAll(filepath.Join(ops.Path, "sync"), 0777)
+	err = os.MkdirAll(filepath.Join(s.workDir, "sync"), 0644)
 	if err != nil {
 		return s, err
 	}
@@ -72,13 +57,27 @@ func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 	return s, err
 }
 
-func (s *GitSourceT) Name() string {
+func (s *GitSourceT) getName() string {
 	return s.name
 }
 
+func (s *GitSourceT) getData() (srcd SourceDataT, err error) {
+	srcd.Name = s.name
+	srcd.SrcType = TypeGIT
+	srcd.EncType = s.encType
+
+	storConfig := filepath.Join(s.workDir, filepath.Base(s.repoFile))
+	if srcd.Data, err = os.ReadFile(storConfig); err != nil {
+		return srcd, err
+	}
+	srcd.Data = utils.ExpandEnv(srcd.Data)
+
+	return srcd, err
+}
+
 func (s *GitSourceT) sync() (updated bool, err error) {
-	syncPath := filepath.Join(s.tmpPath, "sync/repo")
-	srcConfig := filepath.Join(syncPath, s.repo.file)
+	syncPath := filepath.Join(s.workDir, "sync", "repo")
+	srcConfig := filepath.Join(syncPath, s.repoFile)
 	if _, err = os.Stat(srcConfig); !os.IsNotExist(err) {
 		if err = os.RemoveAll(syncPath); err != nil {
 			return updated, err
@@ -86,11 +85,11 @@ func (s *GitSourceT) sync() (updated bool, err error) {
 	}
 
 	_, err = git.PlainClone(syncPath, false, &git.CloneOptions{
-		URL:           s.repo.url,
+		URL:           s.repoURL,
 		Depth:         1,
-		ReferenceName: plumbing.NewBranchReferenceName(s.repo.branch),
+		ReferenceName: plumbing.NewBranchReferenceName(s.repoBranch),
 		SingleBranch:  true,
-		Auth:          s.cred.publicSshKey,
+		Auth:          s.credRef.PublicKey,
 	})
 	if err != nil {
 		return updated, err
@@ -101,12 +100,12 @@ func (s *GitSourceT) sync() (updated bool, err error) {
 		return updated, err
 	}
 
-	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.repo.file))
+	storConfig := filepath.Join(s.workDir, filepath.Base(s.repoFile))
 	storBytes, err := os.ReadFile(storConfig)
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(storConfig, srcBytes, 0777)
+			err = os.WriteFile(storConfig, srcBytes, 0755)
 			if err != nil {
 				return updated, err
 			}
@@ -116,22 +115,11 @@ func (s *GitSourceT) sync() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(storConfig, srcBytes, 0777)
+		err = os.WriteFile(storConfig, srcBytes, 0755)
 		if err != nil {
 			return updated, err
 		}
 	}
 
 	return updated, err
-}
-
-func (s *GitSourceT) get() (conf []byte, err error) {
-	storConfig := filepath.Join(s.tmpPath, filepath.Base(s.repo.file))
-	if conf, err = os.ReadFile(storConfig); err != nil {
-		return conf, err
-	}
-
-	conf = utils.ExpandEnv(conf)
-
-	return conf, err
 }

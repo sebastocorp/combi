@@ -9,8 +9,8 @@ import (
 )
 
 type KubeT struct {
-	ctx context.Context
-	cli *kubernetes.Clientset
+	Ctx context.Context
+	Cli *kubernetes.Clientset
 }
 
 type OptionsKubeT struct {
@@ -21,7 +21,7 @@ type OptionsKubeT struct {
 
 func NewKube(ops OptionsKubeT) (kc *KubeT, err error) {
 	kc = &KubeT{
-		ctx: context.Background(),
+		Ctx: context.Background(),
 	}
 
 	var config *rest.Config
@@ -37,7 +37,7 @@ func NewKube(ops OptionsKubeT) (kc *KubeT, err error) {
 		}
 	}
 
-	kc.cli, err = kubernetes.NewForConfig(config)
+	kc.Cli, err = kubernetes.NewForConfig(config)
 
 	return kc, err
 }

@@ -7,7 +7,7 @@ package nginx
 type NginxT struct {
 }
 
-func (e *NginxT) DecodeConfig(cfgBytes []byte) (cfg map[string]any, err error) {
+func (e *NginxT) Decode(cfgBytes []byte) (cfg map[string]any, err error) {
 	ts, err := tokenize(cfgBytes)
 	if err != nil {
 		return nil, err
@@ -22,12 +22,12 @@ func (e *NginxT) DecodeConfig(cfgBytes []byte) (cfg map[string]any, err error) {
 	return cfg, nil
 }
 
-func (e *NginxT) EncodeConfig(cfg map[string]any) (result []byte, err error) {
+func (e *NginxT) Encode(cfg map[string]any) (result []byte, err error) {
 	result = []byte(encodeConfig(cfg))
 	return result, err
 }
 
-func (e *NginxT) MergeConfigs(dst map[string]any, src map[string]any) error {
+func (e *NginxT) Merge(dst map[string]any, src map[string]any) error {
 	mergeConfig(dst, src)
 	return nil
 }

@@ -18,21 +18,28 @@ type SetT struct {
 }
 
 type SourceT interface {
-	Name() string
+	getName() string
+	getData() (SourceDataT, error)
 	sync() (bool, error)
-	get() ([]byte, error)
 }
 
 type OptionsT struct {
-	Name string
-	Type string
-	Path string
-	Cred any
+	Name    string
+	SrcType string
+	EncType string
+	WorkDir string
+	CredRef any
 
-	Raw  string
 	File string
 	Git  OptionsGitT
 	K8s  OptionsK8sT
+}
+
+type SourceDataT struct {
+	Name    string
+	SrcType string
+	EncType string
+	Data    []byte
 }
 
 func NewSet() (s *SetT, err error) {
@@ -41,7 +48,7 @@ func NewSet() (s *SetT, err error) {
 }
 
 func (s *SetT) Add(ops OptionsT) (err error) {
-	switch ops.Type {
+	switch ops.SrcType {
 	case TypeFILE, TypeFILERAW:
 		{
 			var src *FileSourceT
@@ -71,7 +78,7 @@ func (s *SetT) Add(ops OptionsT) (err error) {
 		}
 	default:
 		{
-			err = fmt.Errorf("unsupported source type '%s'", ops.Type)
+			err = fmt.Errorf("unsupported source type '%s'", ops.SrcType)
 			return err
 		}
 	}
@@ -99,32 +106,20 @@ func (s *SetT) Sync() (updated bool, err error) {
 	return updated, err
 }
 
-func (s *SetT) Get(name string) ([]byte, error) {
-	return nil, nil
+func (s *SetT) GetByName(name string) (SourceDataT, error) {
+	for index := range s.ss {
+		if s.ss[index].getName() == name {
+			return s.ss[index].getData()
+		}
+	}
+
+	return SourceDataT{}, fmt.Errorf("source '%s' not found in set", name)
 }
 
-func (s *SetT) GetByIndex(index int) ([]byte, error) {
+func (s *SetT) GetByIndex(index int) (SourceDataT, error) {
 	if index >= s.size || index < 0 {
-		return nil, fmt.Errorf("index out of bounds")
+		return SourceDataT{}, fmt.Errorf("index out of bounds")
 	}
 
-	return s.ss[index].get()
-}
-
-func GetSource(ops OptionsT) (SourceT, error) {
-	switch ops.Type {
-	case TypeFILE:
-		{
-			return NewFileSource(ops)
-		}
-	case TypeGIT:
-		{
-			return NewGitSource(ops)
-		}
-	case TypeK8S:
-		{
-			return NewK8sSource(ops)
-		}
-	}
-	return nil, nil
+	return s.ss[index].getData()
 }
