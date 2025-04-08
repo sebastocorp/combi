@@ -49,11 +49,6 @@ func NewGitSource(ops OptionsT) (s *GitSourceT, err error) {
 		return s, err
 	}
 
-	err = os.MkdirAll(filepath.Join(s.workDir, "sync"), 0644)
-	if err != nil {
-		return s, err
-	}
-
 	return s, err
 }
 
@@ -105,7 +100,7 @@ func (s *GitSourceT) sync() (updated bool, err error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(storConfig, srcBytes, 0755)
+			err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 			if err != nil {
 				return updated, err
 			}
@@ -115,7 +110,7 @@ func (s *GitSourceT) sync() (updated bool, err error) {
 
 	if !reflect.DeepEqual(srcBytes, storBytes) {
 		updated = true
-		err = os.WriteFile(storConfig, srcBytes, 0755)
+		err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 		if err != nil {
 			return updated, err
 		}

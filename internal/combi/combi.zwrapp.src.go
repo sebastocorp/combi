@@ -12,7 +12,7 @@ type configResultT struct {
 }
 
 func (c *CombiT) getConfigFromSource() (result configResultT, err error) {
-	srcd, err := c.srcs.GetByName(c.target.src)
+	srcd, err := c.srcs.GetByName(c.target.build.src)
 	if err != nil {
 		return result, err
 	}
@@ -42,7 +42,7 @@ func (c *CombiT) getConfigFromTemplate() (result configResultT, err error) {
 	}
 
 	buffer := new(bytes.Buffer)
-	err = c.target.tmpl.Execute(buffer, srcMaps)
+	err = c.target.build.tmpl.Execute(buffer, srcMaps)
 	if err != nil {
 		return result, err
 	}

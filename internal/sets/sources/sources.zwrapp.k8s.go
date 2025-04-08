@@ -52,11 +52,6 @@ func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 		return s, err
 	}
 
-	err = os.MkdirAll(s.workDir, 0644)
-	if err != nil {
-		return s, err
-	}
-
 	return s, err
 }
 
@@ -116,7 +111,7 @@ func (s *K8sSourceT) sync() (updated bool, err error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(storConfig, srcBytes, 0755)
+			err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 			if err != nil {
 				return updated, err
 			}
@@ -126,7 +121,7 @@ func (s *K8sSourceT) sync() (updated bool, err error) {
 
 	if !reflect.DeepEqual(storBytes, srcBytes) {
 		updated = true
-		err = os.WriteFile(storConfig, srcBytes, 0755)
+		err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 		if err != nil {
 			return updated, err
 		}

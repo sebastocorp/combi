@@ -23,25 +23,25 @@ const (
 type CombiT struct {
 	log      logger.LoggerT
 	syncTime time.Duration
-	workDir  string
 
-	creds *credentials.SetT
-	srcs  *sources.SetT
-
+	creds  *credentials.SetT
+	srcs   *sources.SetT
 	target TargetT
 }
 
 type TargetT struct {
 	encType string
+	build   BuildT
+	cons    *conditions.SetT
+	acts    *actions.SetT
+}
 
-	build string
+type BuildT struct {
+	typep string
 	src   string
 	tmpl  *template.Template
 	file  string
 	mode  fs.FileMode
-
-	cons *conditions.SetT
-	acts *actions.SetT
 }
 
 // NewCombi TODO
@@ -86,7 +86,7 @@ func (c *CombiT) Run() {
 			continue
 		}
 		if !updated {
-			if updated = !utils.FileExists(c.target.file); !updated {
+			if updated = !utils.FileExists(c.target.build.file); !updated {
 				c.log.Debug("no updates in sources", extraLogFields)
 				continue
 			}
@@ -94,7 +94,7 @@ func (c *CombiT) Run() {
 
 		// get result file
 		var cfgResult configResultT
-		switch c.target.build {
+		switch c.target.build.typep {
 		case TypeTargetBuildSOURCE:
 			{
 				cfgResult, err = c.getConfigFromSource()
@@ -132,7 +132,7 @@ func (c *CombiT) Run() {
 
 		// config encode and create target file
 		if csr.Status == conditions.StatusSuccess {
-			err = os.WriteFile(c.target.file, cfgResult.Data, c.target.mode)
+			err = os.WriteFile(c.target.build.file, cfgResult.Data, c.target.build.mode)
 			if err != nil {
 				extraLogFields.Set(globals.LogKeyError, err.Error())
 				c.log.Error("unable to create target file", extraLogFields)

@@ -3,12 +3,18 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"io/fs"
 	"os"
 	"regexp"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	FileModePerm fs.FileMode = 0644
+	DirModePerm  fs.FileMode = 0744
 )
 
 // ExpandEnv TODO
@@ -33,18 +39,12 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func GenHashString(args ...string) (h string, err error) {
-	str := ""
-	for _, sv := range args {
-		str += sv
-	}
-
+func GenHashString(str string) (h string, err error) {
 	md5Hash := md5.New()
 	_, err = md5Hash.Write([]byte(str))
 	if err != nil {
 		return h, err
 	}
-
 	h = hex.EncodeToString(md5Hash.Sum(nil))
 
 	return h, err

@@ -82,15 +82,14 @@ type SourceK8sT struct {
 
 type TargetT struct {
 	Encoder    string             `yaml:"encoder"` // values: YAML|JSON|NGINX|LIBCONFIG
-	Path       string             `yaml:"path"`
-	File       string             `yaml:"file"`
-	Mode       uint32             `yaml:"mode"`
 	Build      TargetBuildT       `yaml:"build"`
 	Conditions []TargetConditionT `yaml:"conditions,omitempty"`
 	Actions    []TargetActionT    `yaml:"actions,omitempty"`
 }
 
 type TargetBuildT struct {
+	File     string `yaml:"file"`
+	Mode     uint32 `yaml:"mode"`
 	Type     string `yaml:"type"` // values: TEMPLATE|SOURCE
 	Source   string `yaml:"source"`
 	Template string `yaml:"template"`

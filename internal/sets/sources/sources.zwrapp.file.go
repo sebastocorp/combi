@@ -27,11 +27,6 @@ func NewFileSource(ops OptionsT) (s *FileSourceT, err error) {
 		srcType: ops.SrcType,
 	}
 
-	err = os.MkdirAll(s.workDir, 0644)
-	if err != nil {
-		return s, err
-	}
-
 	switch ops.SrcType {
 	case TypeFILE:
 		{
@@ -45,13 +40,8 @@ func NewFileSource(ops OptionsT) (s *FileSourceT, err error) {
 	case TypeFILERAW:
 		{
 			srcPath := filepath.Join(s.workDir, "sync")
-			err = os.MkdirAll(srcPath, 0644)
-			if err != nil {
-				return s, err
-			}
-
 			s.file = filepath.Join(srcPath, strings.Join([]string{"fileraw", strings.ToLower(s.encType), "txt"}, "."))
-			if err = os.WriteFile(s.file, []byte(ops.File), 0644); err != nil {
+			if err = os.WriteFile(s.file, []byte(ops.File), utils.FileModePerm); err != nil {
 				return s, err
 			}
 		}
@@ -93,7 +83,7 @@ func (s *FileSourceT) sync() (updated bool, err error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			updated = true
-			err = os.WriteFile(storConfig, srcBytes, 0755)
+			err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 			if err != nil {
 				return updated, err
 			}
@@ -103,7 +93,7 @@ func (s *FileSourceT) sync() (updated bool, err error) {
 
 	if !reflect.DeepEqual(storBytes, srcBytes) {
 		updated = true
-		err = os.WriteFile(storConfig, srcBytes, 0755)
+		err = os.WriteFile(storConfig, srcBytes, utils.FileModePerm)
 		if err != nil {
 			return updated, err
 		}
