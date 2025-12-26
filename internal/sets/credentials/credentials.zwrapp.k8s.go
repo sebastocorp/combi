@@ -10,6 +10,7 @@ import (
 
 type KubeT struct {
 	Ctx context.Context
+	Cfg *rest.Config
 	Cli *kubernetes.Clientset
 }
 
@@ -24,20 +25,19 @@ func NewKube(ops OptionsKubeT) (kc *KubeT, err error) {
 		Ctx: context.Background(),
 	}
 
-	var config *rest.Config
 	if ops.InCluster {
-		config, err = rest.InClusterConfig()
+		kc.Cfg, err = rest.InClusterConfig()
 		if err != nil {
 			return kc, err
 		}
 	} else {
-		config, err = clientcmd.BuildConfigFromFlags(ops.MasterUrl, ops.KubeconfigPath)
+		kc.Cfg, err = clientcmd.BuildConfigFromFlags(ops.MasterUrl, ops.KubeconfigPath)
 		if err != nil {
 			return kc, err
 		}
 	}
 
-	kc.Cli, err = kubernetes.NewForConfig(config)
+	kc.Cli, err = kubernetes.NewForConfig(kc.Cfg)
 
 	return kc, err
 }

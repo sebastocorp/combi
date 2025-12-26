@@ -36,7 +36,6 @@ func NewK8sSource(ops OptionsT) (s *K8sSourceT, err error) {
 		name:    ops.Name,
 		encType: ops.EncType,
 		workDir: ops.WorkDir,
-		credRef: ops.CredRef.(*credentials.KubeT),
 
 		resKind:      ops.K8s.Kind,
 		resNamespace: ops.K8s.Namespace,

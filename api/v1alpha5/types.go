@@ -103,10 +103,12 @@ type TargetConditionT struct {
 }
 
 type TargetActionT struct {
-	Name string           `yaml:"name"`
-	On   string           `yaml:"on"` // values: SUCCESS|FAILURE
-	Cmd  []string         `yaml:"cmd"`
-	K8s  TargetActionK8sT `yaml:"k8s,omitempty"`
+	Name       string           `yaml:"name"`
+	On         string           `yaml:"on"`   // values: SUCCESS|FAILURE
+	Type       string           `yaml:"type"` // values: LOCAL|K8S
+	Credential string           `yaml:"credential,omitempty"`
+	Cmd        []string         `yaml:"cmd,omitempty"`
+	K8s        TargetActionK8sT `yaml:"k8s,omitempty"`
 }
 
 type TargetActionK8sT struct {

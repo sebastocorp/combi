@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 )
 
 type FileSourceT struct {
@@ -27,29 +26,11 @@ func NewFileSource(ops OptionsT) (s *FileSourceT, err error) {
 		srcType: ops.SrcType,
 	}
 
-	switch ops.SrcType {
-	case TypeFILE:
-		{
-
-			if !utils.FileExists(ops.File) {
-				err = fmt.Errorf("file '%s' does not exist", ops.File)
-				return s, err
-			}
-			s.file = ops.File
-		}
-	case TypeFILERAW:
-		{
-			srcPath := filepath.Join(s.workDir, "sync")
-			s.file = filepath.Join(srcPath, strings.Join([]string{"fileraw", strings.ToLower(s.encType), "txt"}, "."))
-			if err = os.WriteFile(s.file, []byte(ops.File), utils.FileModePerm); err != nil {
-				return s, err
-			}
-		}
-	default:
-		{
-			err = fmt.Errorf("unsupported source type '%s'", ops.SrcType)
-		}
+	if !utils.FileExists(ops.File) {
+		err = fmt.Errorf("file '%s' does not exist", ops.File)
+		return s, err
 	}
+	s.file = ops.File
 
 	return s, err
 }

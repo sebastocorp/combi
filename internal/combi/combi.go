@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	TypeTargetBuildSOURCE   = "SOURCE"
-	TypeTargetBuildTEMPLATE = "TEMPLATE"
+	TargetBuildTypeSOURCE   = "SOURCE"
+	TargetBuildTypeTEMPLATE = "TEMPLATE"
 )
 
 type CombiT struct {
@@ -37,7 +37,7 @@ type TargetT struct {
 }
 
 type BuildT struct {
-	typep string
+	bType string
 	src   string
 	tmpl  *template.Template
 	file  string
@@ -94,8 +94,8 @@ func (c *CombiT) Run() {
 
 		// get result file
 		var cfgResult configResultT
-		switch c.target.build.typep {
-		case TypeTargetBuildSOURCE:
+		switch c.target.build.bType {
+		case TargetBuildTypeSOURCE:
 			{
 				cfgResult, err = c.getConfigFromSource()
 				if err != nil {
@@ -104,7 +104,7 @@ func (c *CombiT) Run() {
 					continue
 				}
 			}
-		case TypeTargetBuildTEMPLATE:
+		case TargetBuildTypeTEMPLATE:
 			{
 				cfgResult, err = c.getConfigFromTemplate()
 				if err != nil {

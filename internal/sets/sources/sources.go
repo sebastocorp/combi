@@ -6,10 +6,9 @@ import (
 )
 
 const (
-	TypeFILERAW = "FILERAW"
-	TypeFILE    = "FILE"
-	TypeGIT     = "GIT"
-	TypeK8S     = "K8S"
+	TypeFILE = "FILE"
+	TypeGIT  = "GIT"
+	TypeK8S  = "K8S"
 )
 
 type SetT struct {
@@ -49,7 +48,7 @@ func NewSet() (s *SetT, err error) {
 
 func (s *SetT) Add(ops OptionsT) (err error) {
 	switch ops.SrcType {
-	case TypeFILE, TypeFILERAW:
+	case TypeFILE:
 		{
 			var src *FileSourceT
 			src, err = NewFileSource(ops)

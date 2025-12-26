@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"combi/internal/utils"
+	"fmt"
 )
 
 const (
@@ -10,73 +10,76 @@ const (
 )
 
 type SetT struct {
-	set []actionT
+	as []ActionI
+}
+
+type ActionI interface {
+	getOn() string
+	exec() (r ActionResultT, err error)
 }
 
 type OptionsT struct {
-	Name string
-	On   string
-	In   string
+	Name    string
+	Type    string
+	On      string
+	CredRef any
 
 	K8s OptionsK8sT
-	Cmd []string
-}
-
-type OptionsK8sT struct {
-	InCluster      bool
-	ConfigFilepath string
-	MasterUrl      string
-
-	Namespace string
-	Pod       string
-	Container string
+	Cmd OptionsCmdT
 }
 
 type ResultT struct {
 	Ars []ActionResultT `json:"actions"`
 }
 
-func NewActionSet() (as *SetT, err error) {
-	as = &SetT{}
-	return as, err
+type ActionResultT struct {
+	Name   string `json:"name"`
+	On     string `json:"on"`
+	Cmd    string `json:"cmd"`
+	Stdout string `json:"stdout"`
+	Stderr string `json:"stderr"`
 }
 
-func (as *SetT) CreateAdd(ops OptionsT) (err error) {
-	a := actionT{
-		Name: ops.Name,
-		On:   ops.On,
-		In:   ops.In,
-		cmd:  ops.Cmd,
-	}
+func NewSet() (s *SetT, err error) {
+	s = &SetT{}
+	return s, err
+}
 
-	if ops.In == TypeK8S {
-		a.k8s = actionK8sT{
-			namespace: ops.K8s.Namespace,
-			pod:       ops.K8s.Pod,
-			container: ops.K8s.Container,
+func (s *SetT) Add(ops OptionsT) (err error) {
+	switch ops.Type {
+	case TypeK8S:
+		{
+			var act *K8sActionT
+			act, err = newK8sAction(ops)
+			if err != nil {
+				return err
+			}
+			s.as = append(s.as, act)
 		}
-
-		a.k8s.cfg, err = utils.GetK8sConfig(ops.K8s.InCluster, ops.K8s.ConfigFilepath, ops.K8s.MasterUrl)
-		if err != nil {
+	case TypeLOCAL:
+		{
+			var act *CmdActionT
+			act, err = newCmdAction(ops)
+			if err != nil {
+				return err
+			}
+			s.as = append(s.as, act)
+		}
+	default:
+		{
+			err = fmt.Errorf("unsupported '%s' action type", ops.Type)
 			return err
 		}
-
-		a.k8s.client, err = utils.GetK8sClient(a.k8s.cfg)
-		if err != nil {
-			return err
-		}
 	}
-
-	as.set = append(as.set, a)
 
 	return err
 }
 
-func (as *SetT) Execute(on string) (r ResultT, err error) {
-	for ai := range as.set {
-		if as.set[ai].On == on {
+func (s *SetT) Execute(on string) (r ResultT, err error) {
+	for acti := range s.as {
+		if s.as[acti].getOn() == on {
 			var ar ActionResultT
-			ar, err = as.set[ai].exec()
+			ar, err = s.as[acti].exec()
 			r.Ars = append(r.Ars, ar)
 			if err != nil {
 				return r, err
